@@ -31,6 +31,7 @@ import type { State } from "./types";
 import { Brand, Empty, Modal, Spinner } from "./components/ui";
 import PrescriptionModal from "./components/PrescriptionModal";
 import Auth from "./pages/Auth";
+import Landing from "./pages/Landing";
 const Overview = lazy(() => import("./pages/Overview"));
 const Schedule = lazy(() => import("./pages/Schedule"));
 const Medications = lazy(() => import("./pages/Medications"));
@@ -44,7 +45,80 @@ interface Toast {
   message: string;
   type: "success" | "error";
 }
+const workspacePaths = new Set([
+  "/dashboard",
+  "/schedule",
+  "/medications",
+  "/insights",
+  "/care-team",
+  "/settings",
+  "/patient",
+  "/command-center",
+]);
+const authPaths = new Set(["/signin", "/register", "/demo"]);
+
+function destinationAfterSignIn(routeState: unknown) {
+  const target =
+    routeState && typeof routeState === "object" && "returnTo" in routeState
+      ? routeState.returnTo
+      : undefined;
+  return typeof target === "string" &&
+    workspacePaths.has(target.split(/[?#]/)[0])
+    ? target
+    : "/dashboard";
+}
+
 export default function App() {
+  const location = useLocation();
+  useEffect(() => {
+    if (location.hash && location.hash !== "#access") {
+      const target = document.getElementById(location.hash.slice(1));
+      if (target) target.scrollIntoView({ block: "start" });
+      else window.scrollTo(0, 0);
+    } else window.scrollTo(0, 0);
+    const page =
+      location.pathname === "/"
+        ? "Recovery, organized"
+        : location.pathname === "/signin"
+          ? "Sign in"
+          : location.pathname === "/register"
+            ? "Create account"
+            : location.pathname === "/demo"
+              ? "Explore the demo"
+              : workspacePaths.has(location.pathname)
+                ? "Your recovery workspace"
+                : "Page not found";
+    document.title = `${page} · RecoverTrack`;
+  }, [location.pathname, location.hash]);
+
+  if (location.pathname === "/") {
+    // Old links must no longer jump directly to an embedded sign-in form.
+    if (location.hash === "#access") return <Navigate to="/" replace />;
+    return <Landing />;
+  }
+  if (authPaths.has(location.pathname) || workspacePaths.has(location.pathname))
+    return <RecoveryWorkspace />;
+  return (
+    <main className="public-not-found">
+      <Link to="/" aria-label="RecoverTrack home">
+        <Brand />
+      </Link>
+      <span className="subtle-note">404</span>
+      <h1>This page isn’t here.</h1>
+      <p>Return to the website or open your recovery workspace.</p>
+      <div>
+        <Link className="button primary" to="/">
+          Back to home
+        </Link>
+        <Link className="button secondary" to="/signin">
+          Sign in
+        </Link>
+      </div>
+    </main>
+  );
+}
+
+function RecoveryWorkspace() {
   const [state, setState] = useState<State | null>(null);
   const [loading, setLoading] = useState(true);
   const [failure, setFailure] = useState("");
@@ -56,6 +130,8 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const toastId = useRef(0);
+  const refreshSequence = useRef(0);
+  const mounted = useRef(true);
   const notify = useCallback(
     (message: string, type: "success" | "error" = "success") => {
       const id = ++toastId.current;
@@ -67,8 +143,16 @@ export default function App() {
     },
     [],
   );
-  const refresh = useCallback(async () => {
-    const result = await api<State>("/state");
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    const sequence = ++refreshSequence.current;
+    let result: State;
+    try {
+      result = await api<State>("/state", { signal });
+    } catch (error) {
+      if (signal?.aborted || sequence !== refreshSequence.current) return;
+      throw error;
+    }
+    if (signal?.aborted || sequence !== refreshSequence.current) return;
     setState({
       ...result,
       checkIns: result.checkIns ?? [],
@@ -78,14 +162,26 @@ export default function App() {
       notifications: result.notifications ?? [],
     });
     setFailure("");
+    setLoading(false);
   }, []);
   useEffect(() => {
-    refresh()
+    mounted.current = true;
+    const controller = new AbortController();
+    let active = true;
+    refresh(controller.signal)
       .catch((err) => {
-        if (!(err instanceof ApiError && err.status === 401))
+        if (active && !(err instanceof ApiError && err.status === 401))
           setFailure((err as Error).message);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+      mounted.current = false;
+      controller.abort();
+      refreshSequence.current++;
+    };
   }, [refresh]);
   useEffect(() => {
     if (!state) return;
@@ -139,15 +235,19 @@ export default function App() {
   async function logout() {
     try {
       await post("/auth/logout");
-      setState(null);
-      navigate("/");
+      // Leaving the workspace clears its state. Clearing it first would let
+      // the protected-route redirect race with the requested public homepage.
+      refreshSequence.current++;
+      navigate("/", { replace: true });
     } catch (err) {
       notify((err as Error).message, "error");
     }
   }
   async function signedIn() {
+    if (!mounted.current) return;
     await refresh();
-    navigate("/");
+    if (mounted.current)
+      navigate(destinationAfterSignIn(location.state), { replace: true });
   }
   async function retryConnection() {
     setRetrying(true);
@@ -161,7 +261,26 @@ export default function App() {
       setRetrying(false);
     }
   }
-  if (loading)
+  const isAuthPage = authPaths.has(location.pathname);
+  if (isAuthPage) {
+    if (state)
+      return <Navigate to={destinationAfterSignIn(location.state)} replace />;
+    return (
+      <Auth
+        initialMode={
+          location.pathname === "/register"
+            ? "register"
+            : location.pathname === "/demo"
+              ? "demo"
+              : "login"
+        }
+        onSuccess={signedIn}
+        serviceError={failure}
+        onRetry={retryConnection}
+      />
+    );
+  }
+  if (loading && !state)
     return (
       <div className="loading-page">
         <Brand />
@@ -170,10 +289,10 @@ export default function App() {
     );
   if (!state)
     return (
-      <Auth
-        onSuccess={signedIn}
-        serviceError={failure}
-        onRetry={retryConnection}
+      <Navigate
+        to="/signin"
+        replace
+        state={{ returnTo: location.pathname + location.search }}
       />
     );
   const role = state.user.role;
@@ -182,7 +301,7 @@ export default function App() {
   const unread = state.notifications.filter((n) => !n.read).length;
   const nav = [
     {
-      path: "/",
+      path: "/dashboard",
       label: isPatient ? "Today" : "Overview",
       icon: LayoutDashboard,
     },
@@ -209,7 +328,7 @@ export default function App() {
         : "Overview");
   function renderPage() {
     switch (location.pathname) {
-      case "/":
+      case "/dashboard":
         return isDoctor ? (
           <CommandCenter />
         ) : isPatient ? (
@@ -230,9 +349,13 @@ export default function App() {
       case "/patient":
         return <PatientView />;
       case "/command-center":
-        return isPatient ? <Navigate to="/" replace /> : <CommandCenter />;
+        return isPatient ? (
+          <Navigate to="/dashboard" replace />
+        ) : (
+          <CommandCenter />
+        );
       default:
-        return <Navigate to="/" replace />;
+        return <Navigate to="/dashboard" replace />;
     }
   }
   return (
@@ -252,7 +375,11 @@ export default function App() {
           aria-label="Close navigation"
         />
         <aside className="sidebar">
-          <Link className="brand-link" to="/" aria-label="RecoverTrack home">
+          <Link
+            className="brand-link"
+            to="/dashboard"
+            aria-label="RecoverTrack overview"
+          >
             <Brand />
           </Link>
           <div className="sidebar-patient">
@@ -280,6 +407,10 @@ export default function App() {
             ))}
           </nav>
           <div className="sidebar-bottom">
+            <Link className="nav-item" to="/">
+              <ArrowUpRight size={18} />
+              Visit website
+            </Link>
             <Link
               className={`nav-item ${location.pathname === "/settings" ? "active" : ""}`}
               to="/settings"
@@ -382,7 +513,9 @@ export default function App() {
                   <button
                     onClick={() =>
                       navigate(
-                        location.pathname === "/patient" ? "/" : "/patient",
+                        location.pathname === "/patient"
+                          ? "/dashboard"
+                          : "/patient",
                       )
                     }
                   >

@@ -1,45 +1,98 @@
 import { test, expect } from "@playwright/test";
 
-test("the scrolling landing page has working section links, FAQ and responsive layouts", async ({
+test("the scrolling homepage has working sections, FAQ and a separate sign-in page", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await expect(page.locator(".landing h1")).toContainText("Recovery at home.");
+  await expect(page.locator("main h1")).toHaveCount(1);
+  await expect(page.getByLabel("Email address", { exact: true })).toHaveCount(0);
+  await expect(page.locator("form")).toHaveCount(0);
   const targets = await page
     .locator('.landing a[href^="#"]')
     .evaluateAll((links) =>
       links
         .map((link) => link.getAttribute("href"))
-        .filter((href): href is string => Boolean(href)),
+        .filter((href): href is string => Boolean(href) && href !== "#"),
     );
   for (const target of new Set(targets))
     await expect(page.locator(target)).toHaveCount(1);
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBeTruthy();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      )
+      .toBeTruthy();
   }
   expect(
     await page.evaluate(
       () => document.documentElement.scrollHeight > innerHeight * 2,
     ),
   ).toBeTruthy();
-  await page
-    .getByText("Product preview · fictional example", { exact: true })
-    .waitFor();
-  await page.locator(".landing-nav-access").click();
-  await expect(page.getByLabel("Email address", { exact: true })).toBeVisible();
-  await page.getByText("How do I add a prescription?", { exact: true }).click();
+  await page.locator("#questions summary").first().click();
   await expect(page.locator("#questions details[open]")).toHaveCount(1);
   await page.locator(".landing-footer").scrollIntoViewIfNeeded();
   await expect(page.locator(".landing-footer")).toBeVisible();
+  await page
+    .getByRole("banner")
+    .getByRole("link", { name: "Sign in", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/signin$/);
+  await expect(page.getByLabel("Email address", { exact: true })).toBeVisible();
+  await expect(page.locator(".landing")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByLabel("Email address", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Back to home", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator("main h1")).toBeVisible();
+  await expect(page.locator("form")).toHaveCount(0);
 });
 
-test("an API outage leaves the landing usable, shows one error and retries without losing form input", async ({
+test("the public homepage works without contacting an unavailable API", async ({
+  page,
+}) => {
+  const apiRequests: string[] = [];
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.route("**/api/**", async (route) => {
+    apiRequests.push(new URL(route.request().url()).pathname);
+    await route.abort("timedout");
+  });
+  await page.goto("/");
+  await expect(page.locator("main h1")).toBeVisible();
+  await page
+    .getByRole("banner")
+    .getByRole("link", { name: "How it works", exact: true })
+    .click();
+  await expect(page.locator("#how-it-works")).toBeInViewport();
+  await page.locator("#questions summary").first().click();
+  await expect(page.locator("#questions details[open]")).toHaveCount(1);
+  await page.reload();
+  await expect(page.locator("main h1")).toBeVisible();
+  expect(apiRequests).toEqual([]);
+  expect(errors).toEqual([]);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.locator("form")).toHaveCount(0);
+});
+
+test("the old access link opens the homepage from the top without an auth form", async ({
+  page,
+}) => {
+  await page.goto("/#access");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator("main h1")).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.locator("form")).toHaveCount(0);
+  await expect(page.getByLabel("Email address", { exact: true })).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator("main h1")).toBeInViewport();
+  await expect(page.locator("form")).toHaveCount(0);
+});
+
+test("a sign-in outage shows one error and retries without losing credentials", async ({
   page,
 }) => {
   let unavailable = true;
@@ -58,8 +111,7 @@ test("an API outage leaves the landing usable, shows one error and retries witho
         : route.continue(),
     );
   }
-  await page.goto("/");
-  await expect(page.locator(".landing h1")).toBeVisible();
+  await page.goto("/signin");
   await page
     .getByLabel("Email address", { exact: true })
     .fill("fictional-outage@example.test");
@@ -77,14 +129,19 @@ test("an API outage leaves the landing usable, shows one error and retries witho
   await expect(page.getByLabel("Email address", { exact: true })).toHaveValue(
     "fictional-outage@example.test",
   );
+  await expect(page.getByLabel("Password", { exact: true })).toHaveValue(
+    "fictional-outage-passphrase",
+  );
+  await page.locator('a[href="/demo"]').first().click();
   await page.getByRole("button", { name: "Caregiver", exact: true }).click();
   await page.getByRole("button", { name: "Explore demo", exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
   await expect(
     page.getByRole("heading", { name: "Overview", level: 1, exact: true }),
   ).toBeVisible();
 });
 
-test("a non-JSON API response produces a recoverable message instead of breaking the page", async ({
+test("a non-JSON API response produces a recoverable sign-in message", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -96,7 +153,7 @@ test("a non-JSON API response produces a recoverable message instead of breaking
       body: "<p>Gateway unavailable</p>",
     }),
   );
-  await page.goto("/");
+  await page.goto("/signin");
   await page
     .getByLabel("Email address", { exact: true })
     .fill("fictional-gateway@example.test");
@@ -123,6 +180,100 @@ test("a non-JSON API response produces a recoverable message instead of breaking
   await expect(page.getByRole("alert")).toContainText(
     "The server returned an unexpected response.",
   );
-  await expect(page.locator(".landing h1")).toHaveCount(1);
+  await expect(page.locator("main h1")).toHaveCount(1);
+  await expect(page.locator(".landing")).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test("sign-in returns to a requested workspace page while the homepage stays public", async ({
+  page,
+}) => {
+  await page.goto("/schedule");
+  await expect(page).toHaveURL(/\/signin$/);
+  await expect(page.getByLabel("Email address", { exact: true })).toBeVisible();
+  await page.locator('a[href="/demo"]').first().click();
+  await page.getByRole("button", { name: "Caregiver", exact: true }).click();
+  await page.getByRole("button", { name: "Explore demo", exact: true }).click();
+  await expect(page).toHaveURL(/\/schedule$/);
+  await expect(
+    page.getByRole("heading", {
+      name: "Medication schedule",
+      level: 1,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", {
+      name: "Medication schedule",
+      level: 1,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.goto("/");
+  await expect(page.locator("main h1")).toBeVisible();
+  await expect(page.locator("form")).toHaveCount(0);
+  const session = await page.request.get("/api/state");
+  expect(session.status()).toBe(200);
+  await page
+    .getByRole("banner")
+    .getByRole("link", { name: "Sign in", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(
+    page.getByRole("heading", { name: "Overview", level: 1, exact: true }),
+  ).toBeVisible();
+});
+
+test("successful sign-in is not blocked or undone by an older delayed session request", async ({
+  page,
+}) => {
+  let stateRequests = 0;
+  let authenticationStarted = false;
+  let releaseInitial = () => {};
+  const initialRequestHeld = new Promise<void>((resolve) => {
+    releaseInitial = resolve;
+  });
+  await page.route("**/api/auth/demo", async (route) => {
+    authenticationStarted = true;
+    await route.continue();
+  });
+  await page.route("**/api/state", async (route) => {
+    stateRequests++;
+    if (!authenticationStarted) {
+      await initialRequestHeld;
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Sign in to continue." }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  try {
+    await page.goto("/demo");
+    await expect.poll(() => stateRequests).toBeGreaterThanOrEqual(1);
+    await page.getByRole("button", { name: "Caregiver", exact: true }).click();
+    await page.getByRole("button", { name: "Explore demo", exact: true }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(
+      page.getByRole("heading", { name: "Overview", level: 1, exact: true }),
+    ).toBeVisible({ timeout: 5000 });
+    const staleResponse = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/state" &&
+        response.status() === 401,
+    );
+    releaseInitial();
+    await staleResponse;
+    await page.waitForLoadState("networkidle");
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(
+      page.getByRole("heading", { name: "Overview", level: 1, exact: true }),
+    ).toBeVisible();
+    expect(stateRequests).toBeGreaterThanOrEqual(2);
+  } finally {
+    releaseInitial();
+  }
 });

@@ -62,7 +62,7 @@ export default function CareTeam() {
       await post("/care-team/join", { code: String(fields.code).trim() });
       await refresh();
       setDialog(null);
-      navigate("/");
+      navigate("/dashboard");
       notify("Joined the household.");
     } catch (err) {
       setError((err as Error).message);

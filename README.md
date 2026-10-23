@@ -2,6 +2,10 @@
 
 Post-surgery medication schedules, dose records and daily pain/mobility check-ins for patients and caregivers. Clinicians can review a shared household record and manage follow-ups.
 
+## Website and workspace
+
+The public homepage at `/` explains the project and can be read without signing in or connecting to the API. **Sign in** opens `/signin`; account creation and fictional demo sessions have separate `/register` and `/demo` pages. The authenticated workspace opens at `/dashboard`. A protected link returns to its requested workspace page after sign-in. Older `/#access` links open the homepage from the top.
+
 ## Deploy on Vercel
 
 Import this repository into Vercel and deploy from the repository root. The checked-in `vercel.json` serves the React app and `/api` functions together; a separate backend or Python host is not required.
@@ -28,7 +32,7 @@ npm run dev
 
 The supervisor starts Vite on port 5173, Express on 3001 and FastAPI on 8001. Ctrl+C stops all three. For a local production build, run `npm run build` followed by `npm start`.
 
-Create an account for an empty household, or choose a demo role to use fictional records. Each demo session is separate. Household invitations use private codes, not email.
+Open `/register` for an empty household, or `/demo` to choose a role and use fictional records. Each demo session is separate. Household invitations use private codes, not email. Existing accounts sign in at `/signin`.
 
 ## Features
 

@@ -18,7 +18,7 @@ export default function PatientView() {
         description={state.patient.name}
         action={
           state.user.role === "caregiver" && (
-            <button className="button secondary" onClick={() => navigate("/")}>
+            <button className="button secondary" onClick={() => navigate("/dashboard")}>
               <ArrowLeft size={16} />
               Caregiver overview
             </button>

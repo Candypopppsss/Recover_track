@@ -5,7 +5,7 @@ async function demo(
   page: Page,
   role: "Caregiver" | "Patient" | "Clinician" = "Caregiver",
 ) {
-  await page.goto("/");
+  await page.goto("/demo");
   await page.getByRole("button", { name: role, exact: true }).click();
   await page.getByRole("button", { name: "Explore demo", exact: true }).click();
   await expect(
@@ -262,10 +262,7 @@ test("new accounts start empty, can sign back in, and share recovery through a p
   const recipientEmail = `member-${suffix}@example.test`;
   const password = "Fictional-test-passphrase-42!";
   async function register(target: Page, email: string, name: string) {
-    await target.goto("/");
-    await target
-      .getByRole("button", { name: "Create account", exact: true })
-      .click();
+    await target.goto("/register");
     await target.getByLabel("Your name", { exact: true }).fill(name);
     await target
       .getByLabel("Patient's name", { exact: true })
@@ -276,6 +273,7 @@ test("new accounts start empty, can sign back in, and share recovery through a p
     await target
       .getByRole("button", { name: "Create RecoverTrack account", exact: true })
       .click();
+    await expect(target).toHaveURL(/\/dashboard$/);
     await expect(target.locator(".page-title")).toBeVisible();
   }
   await register(page, ownerEmail, "Fictional Owner");
@@ -283,11 +281,18 @@ test("new accounts start empty, can sign back in, and share recovery through a p
   expect(ownerState.demo).toBe(false);
   expect(ownerState.medications).toHaveLength(0);
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page
+    .getByRole("banner")
+    .getByRole("link", { name: "Sign in", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/signin$/);
   await page.getByLabel("Email address", { exact: true }).fill(ownerEmail);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page
     .getByRole("button", { name: "Sign in to RecoverTrack", exact: true })
     .click();
+  await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.locator(".page-title")).toBeVisible();
   expect((await state(page)).patient.id).toBe(ownerState.patient.id);
   await page.getByRole("link", { name: "Care team", exact: true }).click();

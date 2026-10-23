@@ -16,16 +16,20 @@ The Node OCR adapter bundles English trained data and runs Tesseract.js/WASM. It
 
 ## Components
 
-| Component | Responsibility |
-| --- | --- |
-| `src/` | TypeScript UI, charts, forms and same-origin API requests. Vite proxies `/api` locally. |
-| `api/index.mjs`, `server/vercel.mjs`, `vercel.json` | Vercel function startup, required configuration and static/API routing. |
-| `server/` | Authentication, household access, prescriptions, schedules, records, notification evaluation and audit history. |
-| `server/store-postgres.mjs` | PostgreSQL records, idempotent schema setup and transaction/advisory-lock coordination. |
-| `server/intelligence-node.mjs` | Vercel OCR, prescription parsing and rules-based attention scoring. |
-| `services/intelligence/` | Python/FastAPI OCR and scoring for local and Docker deployments. |
-| `scripts/dev.mjs` | Local service startup, health checks and shutdown. |
-| `scripts/setup.sh` | Node dependencies, Python environment and frontend build. |
+The public website at `/` renders independently of API/session initialization. It contains no authentication form. `/signin`, `/register` and `/demo` are dedicated access pages; the recovery dashboard is `/dashboard`, with the existing protected schedule, medication and care-team routes. Protected deep links preserve a validated internal destination through sign-in. Session hydration is abortable and ignores stale responses so a delayed initial request cannot overwrite a newer signed-in state. Old `/#access` URLs return to the homepage top.
+
+| Component                                           | Responsibility                                                                                                  |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `src/`                                              | TypeScript UI, charts, forms and same-origin API requests. Vite proxies `/api` locally.                         |
+| `src/pages/Landing.tsx`, `src/landing.css`          | Public scrolling website, sections, product example and FAQ; no API dependency.                                 |
+| `src/pages/Auth.tsx`, `src/auth.css`                | Separate sign-in, registration and fictional demo pages.                                                        |
+| `api/index.mjs`, `server/vercel.mjs`, `vercel.json` | Vercel function startup, required configuration and static/API routing.                                         |
+| `server/`                                           | Authentication, household access, prescriptions, schedules, records, notification evaluation and audit history. |
+| `server/store-postgres.mjs`                         | PostgreSQL records, idempotent schema setup and transaction/advisory-lock coordination.                         |
+| `server/intelligence-node.mjs`                      | Vercel OCR, prescription parsing and rules-based attention scoring.                                             |
+| `services/intelligence/`                            | Python/FastAPI OCR and scoring for local and Docker deployments.                                                |
+| `scripts/dev.mjs`                                   | Local service startup, health checks and shutdown.                                                              |
+| `scripts/setup.sh`                                  | Node dependencies, Python environment and frontend build.                                                       |
 
 Local development uses Express and FastAPI/native Tesseract. Storage prefers PostgreSQL, then MongoDB, with SQLite available when neither is configured. Docker retains separate API/Python services; the optional Render profile supervises both in one container. These modes use a running reminder worker, while Vercel evaluates reminders when requests arrive.
 

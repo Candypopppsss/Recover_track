@@ -4,6 +4,8 @@
 
 The root `vercel.json` builds the Vite frontend and routes `/api` requests to `api/index.mjs`. The Express API runs as a Node.js function with a 60-second maximum duration. OCR and attention scoring run in Node; this deployment does not start Python, a native Tesseract process or a persistent reminder worker.
 
+Share the root website URL without `#access`. The homepage is public and makes no API requests. Sign-in, registration and demo sessions open on `/signin`, `/register` and `/demo`; the authenticated overview is `/dashboard`. The checked-in SPA fallback serves those URLs on direct visits and reloads.
+
 ### Neon setup
 
 1. Import the repository through [Vercel's new-project page](https://vercel.com/new), or use the existing project. Use the repository root, Vite framework preset and checked-in configuration.
@@ -30,18 +32,19 @@ Connecting a new Neon database starts with an empty record store. Existing Mongo
 
 A page loading successfully only confirms the frontend was served. A generic initialization error alone does not identify which setting failed. This version returns HTTP 503 with a non-secret `code` when initialization fails:
 
-| Code | Check |
-| --- | --- |
-| `storage_config_missing` | A supported database URL is missing or invalid. Connect Neon to this project/environment. |
-| `encryption_key_missing` | The key is missing or not a canonical base64-encoded 32-byte value. |
-| `database_unreachable` | Initialization did not complete. Check connection settings, provider availability and function logs. |
+| Code                     | Check                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `storage_config_missing` | A supported database URL is missing or invalid. Connect Neon to this project/environment.            |
+| `encryption_key_missing` | The key is missing or not a canonical base64-encoded 32-byte value.                                  |
+| `database_unreachable`   | Initialization did not complete. Check connection settings, provider availability and function logs. |
 
 - Check that `DATABASE_URL` or `POSTGRES_URL` is present in the environment used by the deployment, especially **Production** versus **Preview**. Check presence without sharing the value.
 - Check that `DATA_ENCRYPTION_KEY` decodes to exactly 32 bytes and is the original key for any existing encrypted data.
 - Confirm that the Neon database is connected to this Vercel project, then redeploy after changing variables.
+- For a Neon connection timeout, check that its compute endpoint is available and the integration is connected to **Production**. Verify privately that the current deployment uses the integration's connection variable. A stale manually entered `DATABASE_URL` takes precedence over `POSTGRES_URL`; keep the database, records and encryption key while correcting its connection settings.
 - Use the deployed `/api/health` response and Vercel function logs to check initialization. A logged-out `/api/state` returning 401 is expected once health succeeds.
 
-The redesigned frontend is deployed at [recovertrack-pink.vercel.app](https://recovertrack-pink.vercel.app/). Its API currently reports `encryption_key_missing`; the deployment needs a valid private key before database connectivity and live workflows can be verified. These instructions alone do not establish a live Neon connection. Verify actual health and data persistence before sharing the app as ready.
+The frontend is deployed at [recovertrack-pink.vercel.app](https://recovertrack-pink.vercel.app/). The latest live API check returns `database_unreachable` after approximately eight seconds. The key and database URL now pass initial validation; the owner confirms Neon is connected, but a working production database connection has not been verified. Private provider settings and logs are unavailable from this workspace. Verify actual health and data persistence before sharing the app as ready.
 
 ### Runtime limits
 
@@ -86,20 +89,20 @@ If a separate HTTPS API already exists, `npm run configure:vercel` can generate 
 
 ## Configuration reference
 
-| Variable | Scope and purpose |
-| --- | --- |
-| `DATABASE_URL` / `POSTGRES_URL` | Preferred PostgreSQL connection, normally supplied by the Vercel/Neon integration. `DATABASE_URL` takes precedence. |
-| `MONGODB_URI` | Existing MongoDB alternative when no PostgreSQL connection is configured. Required by the retained Render profile. |
-| `MONGODB_DATABASE` | Database name; default `recovertrack`. |
-| `DATA_ENCRYPTION_KEY` | Required stable key for hosted records; optional locally if a key file is used. |
-| `COOKIE_SECURE` / `TRUST_PROXY` | Enabled by the Vercel/Render entrypoints; configure explicitly behind other trusted HTTPS proxies. |
-| `ALLOWED_ORIGINS` | Accepted browser origins for mutations; needed for a separate frontend/backend deployment. |
-| `PORT` / `API_PORT`, `API_HOST` | Long-running API port/interface; defaults 3001 and `0.0.0.0`. |
-| `DATA_DIR` | Local database/key directory; default `.data`. Vercel does not use it for durable records. |
-| `INTELLIGENCE_PORT`, `INTELLIGENCE_URL` | Local Python port (default 8001) or an existing private service URL. Not required by the Vercel adapter. |
-| `INTERNAL_SERVICE_TOKEN` | Shared authorization secret for separate Node/Python services. Not required by the in-process Vercel adapter. |
-| `RECOVERTRACK_PYTHON` | Local Python executable; defaults to `.venv/bin/python` if present. |
-| `OCR_ENGINE` / `TROCR_MODEL_PATH` | Local Python OCR engine and optional verified TrOCR model. Vercel uses bundled Tesseract.js English. |
+| Variable                                | Scope and purpose                                                                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL` / `POSTGRES_URL`         | Preferred PostgreSQL connection, normally supplied by the Vercel/Neon integration. `DATABASE_URL` takes precedence. |
+| `MONGODB_URI`                           | Existing MongoDB alternative when no PostgreSQL connection is configured. Required by the retained Render profile.  |
+| `MONGODB_DATABASE`                      | Database name; default `recovertrack`.                                                                              |
+| `DATA_ENCRYPTION_KEY`                   | Required stable key for hosted records; optional locally if a key file is used.                                     |
+| `COOKIE_SECURE` / `TRUST_PROXY`         | Enabled by the Vercel/Render entrypoints; configure explicitly behind other trusted HTTPS proxies.                  |
+| `ALLOWED_ORIGINS`                       | Accepted browser origins for mutations; needed for a separate frontend/backend deployment.                          |
+| `PORT` / `API_PORT`, `API_HOST`         | Long-running API port/interface; defaults 3001 and `0.0.0.0`.                                                       |
+| `DATA_DIR`                              | Local database/key directory; default `.data`. Vercel does not use it for durable records.                          |
+| `INTELLIGENCE_PORT`, `INTELLIGENCE_URL` | Local Python port (default 8001) or an existing private service URL. Not required by the Vercel adapter.            |
+| `INTERNAL_SERVICE_TOKEN`                | Shared authorization secret for separate Node/Python services. Not required by the in-process Vercel adapter.       |
+| `RECOVERTRACK_PYTHON`                   | Local Python executable; defaults to `.venv/bin/python` if present.                                                 |
+| `OCR_ENGINE` / `TROCR_MODEL_PATH`       | Local Python OCR engine and optional verified TrOCR model. Vercel uses bundled Tesseract.js English.                |
 
 ## Publication and operations
 
