@@ -10,11 +10,11 @@ The root `vercel.json` builds the Vite frontend and routes `/api` requests to `a
 2. Open the project's **Storage** tab, choose **Create Database**, and select **Neon** from the database integrations.
 3. Select **Neon Free** explicitly. Connect the database to this Vercel project with the default environment-variable names and enable **Production**. Enable Preview separately if needed. Do not select a paid plan or time-limited trial; if Free is unavailable for the account, do not proceed with a paid substitute.
 4. The integration supplies `DATABASE_URL` to the connected environment. The app also accepts `POSTGRES_URL`. Leave the supplied TLS/SSL connection settings intact. Never prefix database or encryption variables with `VITE_`, which would expose them to browser code.
-5. In **Settings → Environment Variables**, add a stable `DATA_ENCRYPTION_KEY` for the same environments: a canonical base64-encoded 32-byte key. If a valid key already exists, keep it. Save a protected backup.
+5. In **Settings → Environment Variables**, add a stable `DATA_ENCRYPTION_KEY` for the same environments: a canonical base64-encoded 32-byte key. For a new store, open `/deployment-key.html` on the deployed app to generate and copy one privately in your browser. If a valid key already exists, keep it. Save a protected backup.
 6. **Redeploy** the project so the function receives the new variables. Connecting storage does not update a deployment that is already running.
 7. Open `/api/health` through the deployed HTTPS app. Expect HTTP 200 with `database: "postgresql-encrypted"`, then test registration/login, reviewed OCR upload, dose recording and persistence after another deployment.
 
-Generate a new encryption key only when one is needed: run `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"` in a private terminal and save the output directly in Vercel's private settings. Do not put it in Git or chat. Changing the key makes records encrypted with the old key unreadable.
+The [browser setup helper](https://recovertrack-pink.vercel.app/deployment-key.html) works independently of the API. It generates 32 random bytes with Web Crypto only after an explicit click, masks the value and copies it only when requested. Its content security policy blocks network connections; the page does not store the key, and clears its field when you leave. Copy it directly into Vercel's private settings and your password manager. Never put it in Git or chat. Use the original key for existing records: changing the key makes those records unreadable.
 
 The PostgreSQL adapter creates its tables and indexes idempotently during initialization; there is no manual SQL setup. Neon handles database connectivity through the integration, without the MongoDB Atlas IP-allowlist setup. This does not remove the need to protect the database credentials.
 
@@ -41,7 +41,7 @@ A page loading successfully only confirms the frontend was served. A generic ini
 - Confirm that the Neon database is connected to this Vercel project, then redeploy after changing variables.
 - Use the deployed `/api/health` response and Vercel function logs to check initialization. A logged-out `/api/state` returning 401 is expected once health succeeds.
 
-No public deployment or live Neon connection is established by these instructions. Verify the actual URL and data persistence before sharing the app.
+The redesigned frontend is deployed at [recovertrack-pink.vercel.app](https://recovertrack-pink.vercel.app/). Its API currently reports `encryption_key_missing`; the deployment needs a valid private key before database connectivity and live workflows can be verified. These instructions alone do not establish a live Neon connection. Verify actual health and data persistence before sharing the app as ready.
 
 ### Runtime limits
 

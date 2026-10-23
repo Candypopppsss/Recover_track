@@ -18,9 +18,9 @@ Playwright starts the development stack if one is not running. It uses system Ch
 | MongoDB 8 | 10 | Encrypted persistence, separate-instance registration and mutation protection, consent revocation, and the Vercel handler with real OCR. |
 | PostgreSQL 17 | 9 | Encrypted persistence, transaction rollback, concurrent instances, household permissions, consent, stable key requirements and the Vercel handler with real OCR. |
 | Python | 21 | OCR/parser validation, service authorization and attention-rule boundaries. |
-| Browser | 12 | Scrolling landing page, responsive layouts, recoverable API failures, auth, invitations, OCR review, medication management, check-ins, settings, exports and full 90-day schedule navigation. |
+| Browser | 13 | Scrolling landing page, responsive layouts, recoverable API failures, auth, invitations, OCR review, medication management, check-ins, settings, exports, full 90-day schedule navigation and browser-only deployment key setup. |
 
-The current suites passed **109 tests: 57 Node, 10 MongoDB, 9 PostgreSQL, 21 Python and 12 browser scenarios**, with no failures or skipped cases in the completed runs. The production frontend build and production dependency audit also pass. The full browser suite ran against a disposable PostgreSQL database, not a hosted production database.
+The current suites passed **110 tests: 57 Node, 10 MongoDB, 9 PostgreSQL, 21 Python and 13 browser scenarios**, with no failures or skipped cases in the completed runs. The production frontend build and production dependency audit also pass. The 12 application browser scenarios ran against a disposable PostgreSQL database, not a hosted production database. The standalone deployment-key scenario ran separately with the local development stack; it verifies canonical key generation, explicit clipboard copying, denied-clipboard fallback, no network/storage writes and clearing on exit/reload.
 
 Run `npm run test:mongo` with `RECOVERTRACK_TEST_MONGODB_URI` pointing to a disposable MongoDB 8 server. This separate suite uses random test databases and deletes them afterward; missing connection settings cause a failure rather than a skipped run. CI runs it with a loopback-only MongoDB service. Storage-only cases use OCR fixtures; the Vercel integration case invokes the actual bundled Node OCR engine.
 
@@ -36,7 +36,7 @@ Vercel handler integrations use real MongoDB 8 or PostgreSQL 17 and actual OCR. 
 
 Vercel's `@vercel/node` 27.0.1 builder traced the function for Node.js 24. The PostgreSQL-enabled materialized bundle contained 969 paths and occupied about 114 MB, including worker, WASM, English language data and native image processing. Eight isolated package checks verified readiness, secure registration, real OCR, mandatory review, confirmed 90-day scheduling, a bounded final-week response, fresh-instance persistence and encrypted payloads. OCR took 664 ms in that local check. Private environment, data and provider/cache directories were absent from the function file list.
 
-These are local runtime and packaging checks. The public site at `recovertrack-pink.vercel.app` was inspected before this update: its frontend returned HTTP 200 and API health/state returned HTTP 503 with the older generic initialization error. The production database configuration could not be inspected from this workspace. A live Neon connection and successful public login, OCR and persistence remain separate release checks.
+These are local runtime and packaging checks. After publication, the public site at `recovertrack-pink.vercel.app` returned HTTP 200 with JavaScript, styles and logo matching the tested redesign byte-for-byte. Its updated API health returned HTTP 503 with `encryption_key_missing`: a supported database URL passes initial validation, but the private encryption key is missing or invalid. The production database configuration could not be inspected from this workspace. A live Neon connection and successful public login, OCR and persistence remain separate release checks after private configuration is completed.
 
 ## Docker verification
 

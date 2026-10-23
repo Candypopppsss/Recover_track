@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'"
+    />
+    <meta name="theme-color" content="#143d33" />
+    <title>Deployment key setup · RecoverTrack</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/deployment-key.css" />
+    <script src="/deployment-key.js" defer></script>
+  </head>
+  <body>
+    <header class="page-header">
+      <a class="brand" href="/"
+        ><img src="/favicon.svg" width="34" height="34" alt="" /><span
+          >RecoverTrack</span
+        ></a
+      >
+      <span class="owner-label">Deployment owner</span>
+    </header>
+    <main class="page-content">
+      <div class="intro">
+        <span class="eyebrow">ONE-TIME DEPLOYMENT SETUP</span>
+        <h1>Set the deployment key.</h1>
+        <p>
+          Create an encryption key in this browser, then add it to your Vercel
+          project. This page does not send or save the key.
+        </p>
+      </div>
+      <aside class="existing-key-notice" aria-labelledby="existing-key-title">
+        <h2 id="existing-key-title">Already have saved recovery records?</h2>
+        <p>
+          Keep the existing key. A new key cannot unlock records encrypted with
+          a different key. If the original key is missing, restore its backup
+          before proceeding.
+        </p>
+      </aside>
+      <div class="setup-grid">
+        <section class="key-panel" aria-labelledby="key-panel-title">
+          <span class="section-number">01 / CREATE LOCALLY</span>
+          <h2 id="key-panel-title">Generate a private key</h2>
+          <p>
+            Use this only for a new store or first-time setup where no
+            encryption key has been saved.
+          </p>
+          <button class="button primary" type="button" id="generate-key">
+            Generate a new key
+          </button>
+          <label class="key-label" for="generated-key"
+            >Generated encryption key</label
+          >
+          <input
+            id="generated-key"
+            type="password"
+            readonly
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Generate a key to begin"
+            aria-describedby="key-handling"
+          />
+          <div class="key-actions">
+            <button
+              class="button secondary"
+              type="button"
+              id="toggle-key"
+              disabled
+            >
+              Show key
+            </button>
+            <button
+              class="button secondary"
+              type="button"
+              id="copy-key"
+              disabled
+            >
+              Copy key
+            </button>
+          </div>
+          <p class="key-handling" id="key-handling">
+            Keep this private. The field clears when you leave or reload this
+            page. Copying is an explicit action; generating a key does not copy
+            it.
+          </p>
+          <p
+            class="status"
+            id="key-status"
+            role="status"
+            aria-live="polite"
+          ></p>
+          <p class="error" id="key-error" role="alert" hidden></p>
+          <noscript
+            ><p class="error">
+              Enable JavaScript to generate a key locally in this browser.
+            </p></noscript
+          >
+        </section>
+        <section class="instructions" aria-labelledby="instructions-title">
+          <span class="section-number">02 / ADD TO VERCEL</span>
+          <h2 id="instructions-title">Save it in your project</h2>
+          <ol>
+            <li>
+              <span>1</span>
+              <div>
+                Open your RecoverTrack project in Vercel, then choose
+                <strong>Settings → Environment Variables</strong>.
+              </div>
+            </li>
+            <li>
+              <span>2</span>
+              <div>
+                Add a variable named <code>DATA_ENCRYPTION_KEY</code>. Paste the
+                copied key as its value and select the
+                <strong>Production</strong> environment.
+              </div>
+            </li>
+            <li>
+              <span>3</span>
+              <div>
+                Save the variable, then <strong>redeploy</strong> the latest
+                production deployment. Existing deployments do not automatically
+                receive a newly saved variable.
+              </div>
+            </li>
+            <li>
+              <span>4</span>
+              <div>
+                Save a private backup in your password manager. Keep the same
+                key for future deployments and database restores.
+              </div>
+            </li>
+          </ol>
+          <div class="backup-note">
+            <strong>No backup is stored here.</strong>
+            <p>
+              If you lose the key, encrypted records cannot be recovered by
+              generating another one.
+            </p>
+          </div>
+        </section>
+      </div>
+      <footer class="page-footer">
+        <span>Local generation · 32 random bytes · standard Base64</span
+        ><a href="/"
+          >Return to RecoverTrack <span aria-hidden="true">↗</span></a
+        >
+      </footer>
+    </main>
+  </body>
+</html>
