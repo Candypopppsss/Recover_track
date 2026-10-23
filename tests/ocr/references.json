@@ -1,0 +1,222 @@
+[
+  {
+    "case": "01",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-A",
+      "strength": "10 mg",
+      "dose": "1 tablet",
+      "frequency": "Morning",
+      "durationDays": 5
+    }
+  },
+  {
+    "case": "02",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-B",
+      "strength": "5 mg",
+      "dose": "2 tablets",
+      "frequency": "Evening",
+      "durationDays": 3
+    }
+  },
+  {
+    "case": "03",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-C",
+      "strength": "20 mg",
+      "dose": "1 tablet",
+      "frequency": "Twice daily",
+      "durationDays": 7
+    }
+  },
+  {
+    "case": "04",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-D",
+      "strength": "25 mg",
+      "dose": "1 capsule",
+      "frequency": "Morning",
+      "durationDays": 4
+    }
+  },
+  {
+    "case": "05",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-E",
+      "strength": "50 mg",
+      "dose": "2 tablets",
+      "frequency": "Afternoon",
+      "durationDays": 6
+    }
+  },
+  {
+    "case": "06",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-F",
+      "strength": "15 mg",
+      "dose": "1 tablet",
+      "frequency": "Evening",
+      "durationDays": 2
+    }
+  },
+  {
+    "case": "07",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-G",
+      "strength": "30 mg",
+      "dose": "2 capsules",
+      "frequency": "Twice daily",
+      "durationDays": 5
+    }
+  },
+  {
+    "case": "08",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-H",
+      "strength": "40 mg",
+      "dose": "1 capsule",
+      "frequency": "Morning",
+      "durationDays": 3
+    }
+  },
+  {
+    "case": "09",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-I",
+      "strength": "75 mg",
+      "dose": "1 tablet",
+      "frequency": "Afternoon",
+      "durationDays": 7
+    }
+  },
+  {
+    "case": "10",
+    "condition": "Clear",
+    "reference": {
+      "name": "MED-J",
+      "strength": "100 mg",
+      "dose": "2 tablets",
+      "frequency": "Evening",
+      "durationDays": 4
+    }
+  },
+  {
+    "case": "11",
+    "condition": "Skew 15 degrees",
+    "reference": {
+      "name": "MED-A",
+      "strength": "10 mg",
+      "dose": "1 tablet",
+      "frequency": "Morning",
+      "durationDays": 5
+    }
+  },
+  {
+    "case": "12",
+    "condition": "Soft blur",
+    "reference": {
+      "name": "MED-B",
+      "strength": "5 mg",
+      "dose": "2 tablets",
+      "frequency": "Evening",
+      "durationDays": 3
+    }
+  },
+  {
+    "case": "13",
+    "condition": "Low light",
+    "reference": {
+      "name": "MED-C",
+      "strength": "20 mg",
+      "dose": "1 tablet",
+      "frequency": "Twice daily",
+      "durationDays": 7
+    }
+  },
+  {
+    "case": "14",
+    "condition": "Shadow",
+    "reference": {
+      "name": "MED-D",
+      "strength": "25 mg",
+      "dose": "1 capsule",
+      "frequency": "Morning",
+      "durationDays": 4
+    }
+  },
+  {
+    "case": "15",
+    "condition": "Uneven crop",
+    "reference": {
+      "name": "MED-E",
+      "strength": "50 mg",
+      "dose": "2 tablets",
+      "frequency": "Afternoon",
+      "durationDays": 6
+    }
+  },
+  {
+    "case": "16",
+    "condition": "Skew + blur",
+    "reference": {
+      "name": "MED-F",
+      "strength": "15 mg",
+      "dose": "1 tablet",
+      "frequency": "Evening",
+      "durationDays": 2
+    }
+  },
+  {
+    "case": "17",
+    "condition": "Faint print",
+    "reference": {
+      "name": "MED-G",
+      "strength": "30 mg",
+      "dose": "2 capsules",
+      "frequency": "Twice daily",
+      "durationDays": 5
+    }
+  },
+  {
+    "case": "18",
+    "condition": "Glare",
+    "reference": {
+      "name": "MED-H",
+      "strength": "40 mg",
+      "dose": "1 capsule",
+      "frequency": "Morning",
+      "durationDays": 3
+    }
+  },
+  {
+    "case": "19",
+    "condition": "Small text",
+    "reference": {
+      "name": "MED-I",
+      "strength": "75 mg",
+      "dose": "1 tablet",
+      "frequency": "Afternoon",
+      "durationDays": 7
+    }
+  },
+  {
+    "case": "20",
+    "condition": "Busy background",
+    "reference": {
+      "name": "MED-J",
+      "strength": "100 mg",
+      "dose": "2 tablets",
+      "frequency": "Evening",
+      "durationDays": 4
+    }
+  }
+]

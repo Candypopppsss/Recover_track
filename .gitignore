@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.data/
+.env
+.env.*
+.venv/
+__pycache__/
+.pytest_cache/
+test-results/
+playwright-report/
+*.log
+.cache/
+*.tsbuildinfo
+
+# Local deployment and credential files
+.vercel/
+.npmrc
+.pypirc
+.netrc
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519

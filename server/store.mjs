@@ -1,0 +1,140 @@
+import { DatabaseSync } from "node:sqlite";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
+import path from "node:path";
+import { MongoClient } from "mongodb";
+
+export async function createStore({
+  dataDir = process.env.DATA_DIR || path.resolve(".data"),
+  memory = false,
+  mongoUri = process.env.MONGODB_URI,
+} = {}) {
+  await mkdir(dataDir, { recursive: true, mode: 0o700 });
+  let key;
+  if (process.env.DATA_ENCRYPTION_KEY) {
+    key = Buffer.from(process.env.DATA_ENCRYPTION_KEY, "base64");
+    if (key.length !== 32)
+      throw new Error(
+        "DATA_ENCRYPTION_KEY must be a base64-encoded 32-byte key.",
+      );
+  } else {
+    const keyPath = path.join(dataDir, "encryption.key");
+    try {
+      key = await readFile(keyPath);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      key = randomBytes(32);
+      try {
+        await writeFile(keyPath, key, { flag: "wx", mode: 0o600 });
+      } catch (conflict) {
+        if (conflict.code !== "EEXIST") throw conflict;
+        key = await readFile(keyPath);
+      }
+    }
+    if (key.length !== 32)
+      throw new Error(
+        "The persistent encryption key must contain exactly 32 bytes. Restore the original key before opening existing data.",
+      );
+    await chmod(keyPath, 0o600);
+  }
+  const encrypt = (object) => {
+    const iv = randomBytes(12),
+      cipher = createCipheriv("aes-256-gcm", key, iv);
+    const encrypted = Buffer.concat([
+      cipher.update(JSON.stringify(object), "utf8"),
+      cipher.final(),
+    ]);
+    return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString(
+      "base64",
+    );
+  };
+  const decrypt = (encoded) => {
+    const packed = Buffer.from(encoded, "base64");
+    const decipher = createDecipheriv(
+      "aes-256-gcm",
+      key,
+      packed.subarray(0, 12),
+    );
+    decipher.setAuthTag(packed.subarray(12, 28));
+    return JSON.parse(
+      Buffer.concat([
+        decipher.update(packed.subarray(28)),
+        decipher.final(),
+      ]).toString("utf8"),
+    );
+  };
+  if (mongoUri) {
+    const client = new MongoClient(mongoUri, {
+      serverSelectionTimeoutMS: 8000,
+    });
+    await client.connect();
+    const collection = client
+      .db(process.env.MONGODB_DATABASE || "recovertrack")
+      .collection("records");
+    await collection.createIndex({ kind: 1, household: 1 });
+    return {
+      kind: "mongodb",
+      get: async (kind, id) => {
+        const r = await collection.findOne({ _id: `${kind}:${id}` });
+        return r ? decrypt(r.payload) : null;
+      },
+      put: async (kind, id, value, household = "") => {
+        await collection.replaceOne(
+          { _id: `${kind}:${id}` },
+          { _id: `${kind}:${id}`, kind, household, payload: encrypt(value) },
+          { upsert: true },
+        );
+        return value;
+      },
+      list: async (kind, household) =>
+        (
+          await collection
+            .find({ kind, ...(household !== undefined ? { household } : {}) })
+            .toArray()
+        ).map((r) => decrypt(r.payload)),
+      delete: async (kind, id) => {
+        await collection.deleteOne({ _id: `${kind}:${id}` });
+      },
+      close: async () => client.close(),
+    };
+  }
+  const dbPath = memory
+    ? ":memory:"
+    : path.join(dataDir, "recovertrack.sqlite");
+  const db = new DatabaseSync(dbPath);
+  db.exec(
+    "PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, id TEXT NOT NULL, household TEXT NOT NULL DEFAULT '', payload TEXT NOT NULL, PRIMARY KEY(kind,id)); CREATE INDEX IF NOT EXISTS records_household ON records(kind, household);",
+  );
+  if (!memory) await chmod(dbPath, 0o600);
+  const get = db.prepare(
+    "SELECT payload FROM records WHERE kind = ? AND id = ?",
+  );
+  const put = db.prepare(
+    "INSERT INTO records(kind,id,household,payload) VALUES(?,?,?,?) ON CONFLICT(kind,id) DO UPDATE SET household=excluded.household,payload=excluded.payload",
+  );
+  const all = db.prepare("SELECT payload FROM records WHERE kind = ?");
+  const householdRecords = db.prepare(
+    "SELECT payload FROM records WHERE kind = ? AND household = ?",
+  );
+  const remove = db.prepare("DELETE FROM records WHERE kind = ? AND id = ?");
+  return {
+    kind: "sqlite-encrypted",
+    get: async (kind, id) => {
+      const r = get.get(kind, id);
+      return r ? decrypt(r.payload) : null;
+    },
+    put: async (kind, id, value, household = "") => {
+      put.run(kind, id, household, encrypt(value));
+      return value;
+    },
+    list: async (kind, household) =>
+      (household === undefined
+        ? all.all(kind)
+        : householdRecords.all(kind, household)
+      ).map((r) => decrypt(r.payload)),
+    delete: async (kind, id) => {
+      remove.run(kind, id);
+    },
+    close: async () => db.close(),
+  };
+}

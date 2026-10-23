@@ -1,0 +1,31 @@
+services:
+  web:
+    environment:
+      TRUST_PROXY: "1"
+      COOKIE_SECURE: "true"
+  caddy:
+    image: caddy:2-alpine
+    init: true
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set the public DNS hostname pointing to this host}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,46 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"
+    environment:
+      NODE_ENV: production
+      COOKIE_SECURE: "true"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?Set the exact public HTTPS app origin}
+      TRUST_PROXY: ${TRUST_PROXY:-}
+      PORT: "3001"
+      DATA_DIR: /app/.data
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?Set a persistent base64-encoded 32-byte encryption key}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?Set a shared private API and intelligence service token}
+      INTELLIGENCE_URL: http://intelligence:8001
+      MONGODB_URI: ${MONGODB_URI:-}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-recovertrack}
+    volumes:
+      - recovertrack_data:/app/.data
+    depends_on:
+      intelligence:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+  intelligence:
+    build:
+      context: ./services/intelligence
+      dockerfile: Dockerfile
+    init: true
+    restart: unless-stopped
+    environment:
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?Set a shared private API and intelligence service token}
+      OCR_ENGINE: tesseract
+      OMP_THREAD_LIMIT: "1"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  recovertrack_data:

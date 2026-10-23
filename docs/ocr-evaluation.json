@@ -1,0 +1,701 @@
+{
+  "runAtUtc": "2026-10-23T04:28:34.167567+00:00",
+  "engine": "tesseract",
+  "engineVersion": "tesseract 5.5.0",
+  "cases": 20,
+  "fieldExactMatches": {
+    "name": 15,
+    "strength": 17,
+    "dose": 15,
+    "frequency": 17,
+    "durationDays": 15
+  },
+  "fullyMatchedCards": 13,
+  "normalization": "Whitespace collapsed only; no fuzzy correction or case conversion. Duration is compared as integer days.",
+  "humanReview": "Not performed. No post-review accuracy or correction-time claim.",
+  "limitations": [
+    "Generated printed synthetic cards are not photographs or handwriting.",
+    "Degradations are deterministic engineering simulations, not held-out capture conditions.",
+    "Not a clinical validation or evidence of safe automatic prescription interpretation."
+  ],
+  "results": [
+    {
+      "case": "01",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-A",
+        "strength": "10 mg",
+        "dose": "1 tablet",
+        "frequency": "Morning",
+        "durationDays": 5
+      },
+      "rawText": "MED-A | 10 mg | 1 tablet\nMorning | 5 days",
+      "drafts": [
+        {
+          "name": "MED-A",
+          "strength": "10 mg",
+          "dose": "1 tablet",
+          "frequency": "Morning",
+          "instructions": "",
+          "times": [],
+          "durationDays": 5,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.945,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.195
+    },
+    {
+      "case": "02",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-B",
+        "strength": "5 mg",
+        "dose": "2 tablets",
+        "frequency": "Evening",
+        "durationDays": 3
+      },
+      "rawText": "MED-B | 5 mg | 2 tablets\nEvening | 3 days",
+      "drafts": [
+        {
+          "name": "MED-B",
+          "strength": "5 mg",
+          "dose": "2 tablets",
+          "frequency": "Evening",
+          "instructions": "",
+          "times": [],
+          "durationDays": 3,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.948,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.196
+    },
+    {
+      "case": "03",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-C",
+        "strength": "20 mg",
+        "dose": "1 tablet",
+        "frequency": "Twice daily",
+        "durationDays": 7
+      },
+      "rawText": "MED-C | 20 mg | 1 tablet\nTwice daily | 7 days",
+      "drafts": [
+        {
+          "name": "MED-C",
+          "strength": "20 mg",
+          "dose": "1 tablet",
+          "frequency": "Twice daily",
+          "instructions": "",
+          "times": [],
+          "durationDays": 7,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.958,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.209
+    },
+    {
+      "case": "04",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-D",
+        "strength": "25 mg",
+        "dose": "1 capsule",
+        "frequency": "Morning",
+        "durationDays": 4
+      },
+      "rawText": "FICTIONAL TEST CARD 04 - NOT MEDICAL ADVICE\nMED-D | 25 mg | 1 capsule\nMorning | 4 days",
+      "drafts": [
+        {
+          "name": "MED-D",
+          "strength": "25 mg",
+          "dose": "1 capsule",
+          "frequency": "Morning",
+          "instructions": "",
+          "times": [],
+          "durationDays": 4,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.947,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.236
+    },
+    {
+      "case": "05",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-E",
+        "strength": "50 mg",
+        "dose": "2 tablets",
+        "frequency": "Afternoon",
+        "durationDays": 6
+      },
+      "rawText": "MED-E | 50 mg | 2 tablets\nAfternoon | 6 days",
+      "drafts": [
+        {
+          "name": "MED-E",
+          "strength": "50 mg",
+          "dose": "2 tablets",
+          "frequency": "Afternoon",
+          "instructions": "",
+          "times": [],
+          "durationDays": 6,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.938,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.222
+    },
+    {
+      "case": "06",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-F",
+        "strength": "15 mg",
+        "dose": "1 tablet",
+        "frequency": "Evening",
+        "durationDays": 2
+      },
+      "rawText": "MED-F | 15 mg | 1 tablet\nEvening | 2 days",
+      "drafts": [
+        {
+          "name": "MED-F",
+          "strength": "15 mg",
+          "dose": "1 tablet",
+          "frequency": "Evening",
+          "instructions": "",
+          "times": [],
+          "durationDays": 2,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.954,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.203
+    },
+    {
+      "case": "07",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-G",
+        "strength": "30 mg",
+        "dose": "2 capsules",
+        "frequency": "Twice daily",
+        "durationDays": 5
+      },
+      "rawText": "MED-G | 30 mg | 2 capsules\nTwice daily | 5 days",
+      "drafts": [
+        {
+          "name": "MED-G",
+          "strength": "30 mg",
+          "dose": "2 capsules",
+          "frequency": "Twice daily",
+          "instructions": "",
+          "times": [],
+          "durationDays": 5,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.956,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.204
+    },
+    {
+      "case": "08",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-H",
+        "strength": "40 mg",
+        "dose": "1 capsule",
+        "frequency": "Morning",
+        "durationDays": 3
+      },
+      "rawText": "FICTIONAL TEST CARD 08 - NOT MEDICAL ADVICE\nMED-H | 40 mg | 1 capsule\nMorning | 3 days",
+      "drafts": [
+        {
+          "name": "MED-H",
+          "strength": "40 mg",
+          "dose": "1 capsule",
+          "frequency": "Morning",
+          "instructions": "",
+          "times": [],
+          "durationDays": 3,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.952,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.219
+    },
+    {
+      "case": "09",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-I",
+        "strength": "75 mg",
+        "dose": "1 tablet",
+        "frequency": "Afternoon",
+        "durationDays": 7
+      },
+      "rawText": "MED-I | 75 mg | 1 tablet\nAfternoon | 7 days",
+      "drafts": [
+        {
+          "name": "MED-I",
+          "strength": "75 mg",
+          "dose": "1 tablet",
+          "frequency": "Afternoon",
+          "instructions": "",
+          "times": [],
+          "durationDays": 7,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.907,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.187
+    },
+    {
+      "case": "10",
+      "condition": "Clear",
+      "reference": {
+        "name": "MED-J",
+        "strength": "100 mg",
+        "dose": "2 tablets",
+        "frequency": "Evening",
+        "durationDays": 4
+      },
+      "rawText": "MED-] | 100 mg | 2 tablets\nEvening | 4 days",
+      "drafts": [
+        {
+          "name": "MED-]",
+          "strength": "100 mg",
+          "dose": "2 tablets",
+          "frequency": "Evening",
+          "instructions": "",
+          "times": [],
+          "durationDays": 4,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.922,
+      "matches": {
+        "name": false,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": false,
+      "ocrAndParseSeconds": 0.188
+    },
+    {
+      "case": "11",
+      "condition": "Skew 15 degrees",
+      "reference": {
+        "name": "MED-A",
+        "strength": "10 mg",
+        "dose": "1 tablet",
+        "frequency": "Morning",
+        "durationDays": 5
+      },
+      "rawText": "aco CARD y1- yor yeni pore\nwev-> \\ 10 ma \\* caviet\nmornind \\5 day?",
+      "drafts": [],
+      "candidateCount": 0,
+      "ocrWordConfidence": 0.427,
+      "matches": {
+        "name": false,
+        "strength": false,
+        "dose": false,
+        "frequency": false,
+        "durationDays": false
+      },
+      "allFieldsMatch": false,
+      "ocrAndParseSeconds": 0.31
+    },
+    {
+      "case": "12",
+      "condition": "Soft blur",
+      "reference": {
+        "name": "MED-B",
+        "strength": "5 mg",
+        "dose": "2 tablets",
+        "frequency": "Evening",
+        "durationDays": 3
+      },
+      "rawText": "MED-B | 5 mg | 2 tablets\nEvening | 3 days",
+      "drafts": [
+        {
+          "name": "MED-B",
+          "strength": "5 mg",
+          "dose": "2 tablets",
+          "frequency": "Evening",
+          "instructions": "",
+          "times": [],
+          "durationDays": 3,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.945,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.258
+    },
+    {
+      "case": "13",
+      "condition": "Low light",
+      "reference": {
+        "name": "MED-C",
+        "strength": "20 mg",
+        "dose": "1 tablet",
+        "frequency": "Twice daily",
+        "durationDays": 7
+      },
+      "rawText": "MED-C | 20 mg | 1 tablet\nTwice daily | 7 days",
+      "drafts": [
+        {
+          "name": "MED-C",
+          "strength": "20 mg",
+          "dose": "1 tablet",
+          "frequency": "Twice daily",
+          "instructions": "",
+          "times": [],
+          "durationDays": 7,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.959,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.192
+    },
+    {
+      "case": "14",
+      "condition": "Shadow",
+      "reference": {
+        "name": "MED-D",
+        "strength": "25 mg",
+        "dose": "1 capsule",
+        "frequency": "Morning",
+        "durationDays": 4
+      },
+      "rawText": "FICTIONAL TEST CARD 14 - NOT MEDICAL ADVICI\nMED-D | 25 mg |\nMorning | 4 da",
+      "drafts": [
+        {
+          "name": "MED-D",
+          "strength": "25 mg",
+          "dose": "",
+          "frequency": "Morning",
+          "instructions": "",
+          "times": [],
+          "durationDays": null,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.934,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": false,
+        "frequency": true,
+        "durationDays": false
+      },
+      "allFieldsMatch": false,
+      "ocrAndParseSeconds": 0.232
+    },
+    {
+      "case": "15",
+      "condition": "Uneven crop",
+      "reference": {
+        "name": "MED-E",
+        "strength": "50 mg",
+        "dose": "2 tablets",
+        "frequency": "Afternoon",
+        "durationDays": 6
+      },
+      "rawText": "MED-E | 50 mg | 2 tablets\nAfternoon | 6 days",
+      "drafts": [
+        {
+          "name": "MED-E",
+          "strength": "50 mg",
+          "dose": "2 tablets",
+          "frequency": "Afternoon",
+          "instructions": "",
+          "times": [],
+          "durationDays": 6,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.938,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.175
+    },
+    {
+      "case": "16",
+      "condition": "Skew + blur",
+      "reference": {
+        "name": "MED-F",
+        "strength": "15 mg",
+        "dose": "1 tablet",
+        "frequency": "Evening",
+        "durationDays": 2
+      },
+      "rawText": "FICTIONAy TEsr CARD 16. Nor MEDICA, Advice\nMED.F 115 Mg} 4 tablet\nEvening 12 da ys",
+      "drafts": [
+        {
+          "name": "MED.F",
+          "strength": "115 Mg",
+          "dose": "4 tablet",
+          "frequency": "Evening",
+          "instructions": "",
+          "times": [],
+          "durationDays": null,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.545,
+      "matches": {
+        "name": false,
+        "strength": false,
+        "dose": false,
+        "frequency": true,
+        "durationDays": false
+      },
+      "allFieldsMatch": false,
+      "ocrAndParseSeconds": 0.279
+    },
+    {
+      "case": "17",
+      "condition": "Faint print",
+      "reference": {
+        "name": "MED-G",
+        "strength": "30 mg",
+        "dose": "2 capsules",
+        "frequency": "Twice daily",
+        "durationDays": 5
+      },
+      "rawText": "",
+      "drafts": [],
+      "candidateCount": 0,
+      "ocrWordConfidence": null,
+      "matches": {
+        "name": false,
+        "strength": false,
+        "dose": false,
+        "frequency": false,
+        "durationDays": false
+      },
+      "allFieldsMatch": false,
+      "ocrAndParseSeconds": 0.201
+    },
+    {
+      "case": "18",
+      "condition": "Glare",
+      "reference": {
+        "name": "MED-H",
+        "strength": "40 mg",
+        "dose": "1 capsule",
+        "frequency": "Morning",
+        "durationDays": 3
+      },
+      "rawText": "FICTIONAL TEST CARD 18 - NOT MEDICAL ADVICE\nMED-H | 40 mg | 1 ca;\nMorning | 3 days",
+      "drafts": [
+        {
+          "name": "MED-H",
+          "strength": "40 mg",
+          "dose": "",
+          "frequency": "Morning",
+          "instructions": "",
+          "times": [],
+          "durationDays": 3,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.948,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": false,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": false,
+      "ocrAndParseSeconds": 0.222
+    },
+    {
+      "case": "19",
+      "condition": "Small text",
+      "reference": {
+        "name": "MED-I",
+        "strength": "75 mg",
+        "dose": "1 tablet",
+        "frequency": "Afternoon",
+        "durationDays": 7
+      },
+      "rawText": "FICTIONAL TEST CARD 19 - NOT MEDICAL ADVICE\nMED-I | 75 mg | 1 tablet\nAfternoon | 7 days",
+      "drafts": [
+        {
+          "name": "MED-I",
+          "strength": "75 mg",
+          "dose": "1 tablet",
+          "frequency": "Afternoon",
+          "instructions": "",
+          "times": [],
+          "durationDays": 7,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.927,
+      "matches": {
+        "name": true,
+        "strength": true,
+        "dose": true,
+        "frequency": true,
+        "durationDays": true
+      },
+      "allFieldsMatch": true,
+      "ocrAndParseSeconds": 0.208
+    },
+    {
+      "case": "20",
+      "condition": "Busy background",
+      "reference": {
+        "name": "MED-J",
+        "strength": "100 mg",
+        "dose": "2 tablets",
+        "frequency": "Evening",
+        "durationDays": 4
+      },
+      "rawText": "a oN . _ aa Lo a\ndiy NOISE Nf eNO\nSy,\n\\o /\nx MED-J | 100 mg | 2 tablets >\np\n\\/ Evening | 4 days\n> \\/\n\\! \\ Sv rr mas ae",
+      "drafts": [
+        {
+          "name": "x MED-J",
+          "strength": "100 mg",
+          "dose": "2 tablets",
+          "frequency": "",
+          "instructions": "",
+          "times": [],
+          "durationDays": null,
+          "reviewRequired": true
+        }
+      ],
+      "candidateCount": 1,
+      "ocrWordConfidence": 0.563,
+      "matches": {
+        "name": false,
+        "strength": true,
+        "dose": true,
+        "frequency": false,
+        "durationDays": false
+      },
+      "allFieldsMatch": false,
+      "ocrAndParseSeconds": 0.369
+    }
+  ]
+}
