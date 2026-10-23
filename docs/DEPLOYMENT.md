@@ -27,6 +27,8 @@ Store secrets outside the repository. For production, set `COOKIE_SECURE=true`, 
 
 The default `render.yaml` requests one **Free** Docker web service and **no disk**. Accounts, sessions, reviewed prescriptions, medications and dose history use an external MongoDB Atlas **Free** cluster, formerly called M0. Atlas Free does not expire and provides 0.5 GB of storage; Render's free local filesystem is temporary. Choose the Free tier explicitly when creating both resources.
 
+Render may still require a credit card for identity verification. Selecting Free or using this Blueprint does not bypass account verification. If card-free signup is required, this hosting route is unsuitable for an account receiving that prompt. Free service availability is also subject to sleep, quotas and provider outages.
+
 1. Create an [Atlas Free cluster](https://www.mongodb.com/docs/atlas/tutorial/deploy-free-tier-cluster/). Create a database user with read/write access to the `recovertrack` database.
 2. Open [the prepared Render deployment](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FCandypopppsss%2FRecover_track) and sign in. Enter the Atlas connection string privately in the requested `MONGODB_URI` field. No connection string or password belongs in Git or chat.
 3. Add the outbound IP ranges shown for the Render service to Atlas's network access list. Render must be allowed to connect before its health check can pass.

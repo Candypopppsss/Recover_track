@@ -43,6 +43,8 @@ Playwright uses system Chromium when available. Otherwise install it with `npx p
 
 For a free hosted demo, use [Render Free with MongoDB Atlas Free](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FCandypopppsss%2FRecover_track). The Blueprint configures the complete app and HTTPS, with records stored in your free Atlas database. It requests no paid service or disk. Both providers require accounts, and Atlas setup is required before deployment.
 
+Render can require credit-card identity verification even for a Free service. This template cannot remove that requirement and does not guarantee card-free signup.
+
 Render Free sleeps after 15 minutes without incoming traffic; reopening can take about a minute. Background reminders pause while it sleeps. Free-tier storage and monthly usage limits apply.
 
 See [deployment instructions](docs/DEPLOYMENT.md) for Render setup or an existing Docker server. Vercel can host the frontend when an existing HTTPS backend is available.
