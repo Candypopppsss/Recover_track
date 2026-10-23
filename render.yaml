@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: recovertrack
+    runtime: docker
+    repo: https://github.com/Candypopppsss/Recover_track
+    branch: main
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    numInstances: 1
+    disk:
+      name: recovertrack-data
+      mountPath: /app/.data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: DATA_DIR
+        value: /app/.data
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: OCR_ENGINE
+        value: tesseract
+      - key: INTERNAL_SERVICE_TOKEN
+        generateValue: true

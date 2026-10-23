@@ -1,0 +1,42 @@
+# syntax=docker/dockerfile:1
+FROM node:24-bookworm-slim AS frontend
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN --mount=type=secret,id=build_ca \
+    if [ -f /run/secrets/build_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/build_ca; fi; \
+    npm ci --no-audit --no-fund
+COPY index.html tsconfig.json tsconfig.app.json vite.config.ts ./
+COPY public ./public
+COPY src ./src
+RUN npm run build
+
+FROM node:24-bookworm-slim AS dependencies
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN --mount=type=secret,id=build_ca \
+    if [ -f /run/secrets/build_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/build_ca; fi; \
+    npm ci --omit=dev --no-audit --no-fund
+
+FROM python:3.12-slim-bookworm AS runtime
+ENV NODE_ENV=production PORT=10000 DATA_DIR=/app/.data RECOVERTRACK_PYTHON=/app/.venv/bin/python PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 OMP_THREAD_LIMIT=1
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 gosu tesseract-ocr tesseract-ocr-eng && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 recovertrack && useradd --create-home --uid 10001 --gid 10001 recovertrack
+COPY --from=frontend /usr/local/bin/node /usr/local/bin/node
+COPY services/intelligence/requirements.txt ./services/intelligence/requirements.txt
+RUN --mount=type=secret,id=build_ca \
+    set -eu; python -m venv /app/.venv; \
+    if [ -f /run/secrets/build_ca ]; then export PIP_CERT=/run/secrets/build_ca; fi; \
+    /app/.venv/bin/python -m pip install --no-cache-dir --requirement services/intelligence/requirements.txt
+COPY --from=dependencies --chown=10001:10001 /app/node_modules ./node_modules
+COPY --from=frontend --chown=10001:10001 /app/dist ./dist
+COPY --chown=10001:10001 package.json ./package.json
+COPY --chown=10001:10001 server/app.mjs server/index.mjs server/scheduling.mjs server/store.mjs ./server/
+COPY --chown=10001:10001 services/intelligence/app.py ./services/intelligence/app.py
+COPY --chown=10001:10001 scripts/dev.mjs scripts/start-render.mjs ./scripts/
+RUN mkdir -p /app/.data && chown 10001:10001 /app/.data && chmod 700 /app/.data
+COPY --chmod=0755 scripts/render-entrypoint.sh /usr/local/bin/recovertrack-render-entrypoint
+EXPOSE 10000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 CMD node -e "fetch('http://127.0.0.1:'+process.env.PORT+'/api/health').then(async r=>{const h=await r.json();process.exit(r.ok&&h.status==='ok'&&h.ocr==='tesseract'?0:1)}).catch(()=>process.exit(1))"
+ENTRYPOINT ["/usr/local/bin/recovertrack-render-entrypoint"]
+CMD ["node", "scripts/start-render.mjs"]

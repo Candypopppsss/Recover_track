@@ -14,11 +14,11 @@ Playwright starts the development stack if one is not running. It uses system Ch
 
 | Suite | Cases | Coverage |
 | --- | ---: | --- |
-| Node | 29 | API access, review gates, scheduling/timezones, duplicate mutations, consent, invitations, restart persistence, secret guards and deployment configuration. |
+| Node | 33 | API access, review gates, scheduling/timezones, duplicate mutations, consent, invitations, restart persistence, secret guards and Vercel/Render deployment configuration. |
 | Python | 21 | OCR/parser validation, service authorization and attention-rule boundaries. |
 | Browser | 8 | Auth, invitations, review/confirmation, medication management, check-ins, settings, exports and mobile navigation. |
 
-The final run passed **58 tests: 29 Node, 21 Python and 8 browser scenarios**, with no failures or skipped cases.
+The recorded suites passed **62 tests: 33 Node, 21 Python and 8 browser scenarios**, with no failures or skipped cases. The Node suite was rerun after adding the Render launcher; application, Python and browser source remained unchanged.
 
 MongoDB, external delivery, production TLS/MFA and clinical outcomes are not covered by these tests.
 
@@ -34,6 +34,12 @@ Both final images built with TLS verification enabled. Fourteen full-stack conta
 - Removing and replacing the API container preserves its session, confirmed prescription, medication and doses through the named data volume and unchanged encryption key. Checked fixture names are absent from the stored ciphertext, and the supplied key is not written into the volume.
 
 Only a temporary loopback port was published. All verification containers, networks and data volumes were removed afterward; built images remain local. The production overlay preserves loopback-only API access and private Python, and its Caddy configuration validates. No public host, domain, certificate issuance or external deployment was exercised. MongoDB, external notification delivery and clinical behavior remain outside these checks.
+
+## Render container verification
+
+The combined `Dockerfile.render` image passed 11 local container checks with a 512 MiB memory limit and no swap. These covered production assets, secure authentication, actual Tesseract OCR, mandatory review, duplicate/access rejection and records surviving container replacement. A fresh root-owned disk started successfully after the narrow ownership bootstrap; Node/Python ran as UID 10001, and the generated encryption key retained mode `0600` and survived replacement.
+
+Peak memory during the OCR scenario was 147,214,336 bytes (about 140.4 MiB), with no OOM termination. This measures the tested scenario, not production load capacity. The temporary containers, volume and bind directory were removed. Blueprint YAML and its local settings were checked; Render-side validation, billing approval and a public deployment still require hosting-account access.
 
 ## OCR evaluation
 

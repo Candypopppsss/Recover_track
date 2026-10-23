@@ -41,7 +41,9 @@ Playwright uses system Chromium when available. Otherwise install it with `npx p
 
 ## Deployment
 
-Use Docker for the complete app. See [deployment instructions](docs/DEPLOYMENT.md) for persistent storage, HTTPS and secret configuration. Vercel can host the frontend when an existing HTTPS backend is available.
+For hosted Docker, [create the Render deployment](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FCandypopppsss%2FRecover_track). The Blueprint configures the complete app, HTTPS and a persistent disk. Render requires account sign-in and approval of its displayed service and storage charges.
+
+See [deployment instructions](docs/DEPLOYMENT.md) for Render setup or an existing Docker server. Vercel can host the frontend when an existing HTTPS backend is available.
 
 ## Limits
 
