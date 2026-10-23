@@ -1,15 +1,39 @@
 import { createApp } from "./app.mjs";
 import { createIntelligenceRequest } from "./intelligence-node.mjs";
+import { normalizePostgresUri } from "./store-postgres.mjs";
 
 export function validateVercelStorage(environment = process.env) {
-  const uri = environment.MONGODB_URI;
+  const postgresUri = environment.DATABASE_URL || environment.POSTGRES_URL;
+  const uri = postgresUri || environment.MONGODB_URI;
   const encoded = environment.DATA_ENCRYPTION_KEY;
-  if (!uri || !/^mongodb(?:\+srv)?:\/\//.test(uri)) {
-    throw new Error("Configure MONGODB_URI in the project's private Vercel environment settings.");
+  let configured = uri && /^mongodb(?:\+srv)?:\/\//.test(uri);
+  if (postgresUri) {
+    try {
+      normalizePostgresUri(postgresUri);
+      configured = true;
+    } catch {
+      configured = false;
+    }
   }
-  if (!encoded || Buffer.from(encoded, "base64").length !== 32 ||
-      Buffer.from(encoded, "base64").toString("base64") !== encoded) {
-    throw new Error("Configure a persistent base64-encoded 32-byte DATA_ENCRYPTION_KEY in private Vercel settings.");
+  if (!configured) {
+    throw Object.assign(
+      new Error(
+        "Database setup is incomplete. Connect a free Neon database in Vercel Storage, or configure a private MONGODB_URI, then redeploy.",
+      ),
+      { code: "storage_config_missing" },
+    );
+  }
+  if (
+    !encoded ||
+    Buffer.from(encoded, "base64").length !== 32 ||
+    Buffer.from(encoded, "base64").toString("base64") !== encoded
+  ) {
+    throw Object.assign(
+      new Error(
+        "A persistent encryption key is required. Configure DATA_ENCRYPTION_KEY in private Vercel settings, then redeploy.",
+      ),
+      { code: "encryption_key_missing" },
+    );
   }
 }
 
@@ -36,15 +60,31 @@ export function createVercelHandler(initialize = createVercelApp) {
       });
       const app = await application;
       return app(req, res);
-    } catch {
+    } catch (error) {
       // Connection errors can contain database details. Keep provider logs and
       // public responses free of credentials and connection strings.
-      console.error("RecoverTrack API initialization failed. Check private database and encryption settings.");
+      const code = [
+        "storage_config_missing",
+        "encryption_key_missing",
+      ].includes(error.code)
+        ? error.code
+        : "database_unreachable";
+      const messages = {
+        storage_config_missing:
+          "Database setup is incomplete. Connect a free Neon database in Vercel Storage, or configure a private MONGODB_URI, then redeploy.",
+        encryption_key_missing:
+          "A persistent encryption key is required. Configure DATA_ENCRYPTION_KEY in private Vercel settings, then redeploy.",
+        database_unreachable:
+          "RecoverTrack cannot connect to its database. Check the private database connection settings and redeploy, or try again shortly.",
+      };
+      console.error(`RecoverTrack API initialization failed (${code}).`);
       res.statusCode = 503;
       res.setHeader("Content-Type", "application/json");
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("Retry-After", "30");
-      res.end(JSON.stringify({ error: "RecoverTrack is temporarily unavailable. Please try again shortly." }));
+      res.end(
+        JSON.stringify({ status: "unavailable", code, error: messages[code] }),
+      );
     }
   };
 }

@@ -130,6 +130,7 @@ export interface State {
   patient: Patient;
   medications: Medication[];
   doses: Dose[];
+  doseRange?: { from: string; to: string } | null;
   notifications: Notification[];
   activity: Activity[];
   risk: Risk;

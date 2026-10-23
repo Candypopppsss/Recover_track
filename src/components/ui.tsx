@@ -1,18 +1,20 @@
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
-import {
-  Activity,
-  Check,
-  X,
-  Inbox,
-  LoaderCircle,
-  ArrowUpRight,
-} from "lucide-react";
+import { Check, X, Inbox, LoaderCircle, ArrowUpRight } from "lucide-react";
 export function Brand() {
   return (
     <div className="brand">
       <span className="brand-mark">
-        <Activity size={24} strokeWidth={2.4} />
+        <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <path
+            d="M11.5 28.5V11.5h8.1c5.1 0 8.2 2.6 8.2 6.7s-3.1 6.7-8.2 6.7h-3.3L28 33"
+            stroke="currentColor"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="11.5" cy="33" r="2.2" fill="#d7ed9d" />
+        </svg>
       </span>
       <span>RecoverTrack</span>
     </div>

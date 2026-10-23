@@ -6,14 +6,16 @@ Post-surgery medication schedules, dose records and daily pain/mobility check-in
 
 Import this repository into Vercel and deploy from the repository root. The checked-in `vercel.json` serves the React app and `/api` functions together; a separate backend or Python host is not required.
 
-Set these private environment variables in the Vercel project before deployment:
+Use **Neon PostgreSQL** through the Vercel project integration:
 
-- `MONGODB_URI`: your MongoDB connection string, with a database user and network access for Vercel.
-- `DATA_ENCRYPTION_KEY`: a persistent base64-encoded 32-byte key. Keep the same key across redeployments.
+1. In the Vercel project, open **Storage → Create Database → Neon**.
+2. Choose **Neon Free**, connect it to the project and enable the **Production** environment. The integration supplies `DATABASE_URL`; `POSTGRES_URL` is also supported.
+3. Add a persistent, private `DATA_ENCRYPTION_KEY`: a base64-encoded 32-byte key. Keep an existing valid key unchanged.
+4. Redeploy, then check `/api/health`, login and saved records through the deployed app.
 
-The API requires MongoDB and refuses temporary local storage. Sessions and encrypted record payloads are stored in MongoDB. The Vercel entrypoint enables secure cookies and proxy handling; OCR runs in Node with bundled English language data.
+Tables and indexes are created automatically on first connection. No manual SQL or MongoDB IP allowlist is needed for this flow. The API requires a hosted database and refuses temporary local storage. Vercel enables secure cookies; OCR and scoring run in Node without a separate Python host.
 
-Vercel Hobby and MongoDB Atlas Free can support a personal demo within their quotas. Neither provides an uninterrupted-service or always-free guarantee. The configuration is included, but no public deployment or live database connection has been verified. See [deployment instructions](docs/DEPLOYMENT.md) for setup and limits.
+Vercel Hobby and Neon Free can support a personal demo within their quotas. Choose Free explicitly; the repository does not create a paid plan or trial. Current account eligibility and a live Neon connection have not been verified. See [deployment instructions](docs/DEPLOYMENT.md) for setup, troubleshooting and limits.
 
 ## Local development
 
@@ -36,7 +38,7 @@ Create an account for an empty household, or choose a demo role to use fictional
 - Daily pain/mobility reports, adherence charts and an experimental attention score.
 - Caregiver invitations, clinician review, follow-up queue and access history.
 
-Local development uses SQLite unless `MONGODB_URI` is set. Retain `.data/encryption.key` with the local database. Hosted records use MongoDB and the private `DATA_ENCRYPTION_KEY`; neither the database nor its key belongs in the repository.
+Storage selection is `DATABASE_URL`, then `POSTGRES_URL`, then `MONGODB_URI`, otherwise local SQLite. Vercel requires PostgreSQL or MongoDB. Retain `.data/encryption.key` with a local SQLite database and keep hosted encryption keys private. Changing the database connection does not migrate or delete existing records.
 
 ## Tests
 

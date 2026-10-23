@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CalendarDays,
   ChevronLeft,
@@ -13,8 +13,16 @@ import {
   formatDate,
   dateInZone,
 } from "../context";
-import { PageHeader } from "../components/ui";
+import { Empty, PageHeader, Spinner } from "../components/ui";
 import { DoseList } from "../components/recovery";
+import { api } from "../api";
+import type { Dose } from "../types";
+interface WeekRange {
+  from: string;
+  to: string;
+  patientId: string;
+  timeZone: string;
+}
 export default function Schedule() {
   const { state } = useApp();
   const today = todayInZone(state.patient.timeZone);
@@ -22,10 +30,78 @@ export default function Schedule() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [week, setWeek] = useState<(WeekRange & { doses: Dose[] }) | null>(
+    null,
+  );
+  const [loadError, setLoadError] = useState<
+    (WeekRange & { message: string }) | null
+  >(null);
+  const [fetching, setFetching] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const courseDates = state.doses
+    .map((dose) => dateInZone(dose.scheduledAt, state.patient.timeZone))
+    .sort();
+  const weekForDate = (date: string) =>
+    Math.floor(((Date.parse(date) - Date.parse(today)) / 86400000 + 3) / 7);
+  const firstWeek = Math.min(
+    0,
+    weekForDate(state.doseRange?.from ?? courseDates[0] ?? today),
+  );
+  const lastWeek = Math.max(
+    0,
+    weekForDate(state.doseRange?.to ?? courseDates.at(-1) ?? today),
+  );
+  useEffect(() => {
+    const bounded = Math.max(firstWeek, Math.min(lastWeek, weekOffset));
+    if (bounded !== weekOffset) {
+      setWeekOffset(bounded);
+      setSelected((date) => shiftDate(date, (bounded - weekOffset) * 7));
+    }
+  }, [firstWeek, lastWeek, weekOffset]);
   const days = Array.from({ length: 7 }, (_, i) =>
     shiftDate(today, weekOffset * 7 + i - 3),
   );
-  const dayDoses = state.doses.filter(
+  const from = days[0];
+  const to = days[6];
+  const patientId = state.patient.id;
+  const timeZone = state.patient.timeZone;
+  const matchesRange = (range: WeekRange | null) =>
+    range?.from === from &&
+    range.to === to &&
+    range.patientId === patientId &&
+    range.timeZone === timeZone;
+  const hasWeek = matchesRange(week);
+  const error = matchesRange(loadError) ? loadError?.message : undefined;
+  const weekDoses = hasWeek ? week!.doses : [];
+  const loading = fetching || (!hasWeek && !error);
+  useEffect(() => {
+    const controller = new AbortController();
+    const range = { from, to, patientId, timeZone };
+    setFetching(true);
+    setLoadError(null);
+    api<{ doses: Dose[] }>(`/doses?from=${from}&to=${to}`, {
+      signal: controller.signal,
+    })
+      .then((result) => {
+        if (!controller.signal.aborted)
+          setWeek({ ...range, doses: result.doses });
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted)
+          setLoadError({
+            ...range,
+            message:
+              cause instanceof Error
+                ? cause.message
+                : "The schedule could not be loaded. Please try again.",
+          });
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setFetching(false);
+      });
+    return () => controller.abort();
+  }, [from, to, patientId, timeZone, state.doses, retry]);
+  const dayDoses = weekDoses.filter(
     (d) => dateInZone(d.scheduledAt, state.patient.timeZone) === selected,
   );
   const filtered = dayDoses.filter(
@@ -46,7 +122,17 @@ export default function Schedule() {
           </a>
         }
       />
-      <section className="card schedule-main">
+      <div className="context-strip">
+        <span>
+          <CalendarDays size={15} />
+          {state.patient.name}'s dose plan
+        </span>
+        <span>
+          Schedule time zone{" "}
+          <strong>{state.patient.timeZone.replaceAll("_", " ")}</strong>
+        </span>
+      </div>
+      <section className="card schedule-main" aria-busy={loading}>
         <div className="schedule-header">
           <div>
             <span className="eyebrow">YOUR SCHEDULE</span>
@@ -64,7 +150,7 @@ export default function Schedule() {
             </button>
             <button
               className="icon-button"
-              disabled={weekOffset <= -1}
+              disabled={weekOffset <= firstWeek}
               onClick={() => {
                 setWeekOffset((v) => v - 1);
                 setSelected(shiftDate(selected, -7));
@@ -75,7 +161,7 @@ export default function Schedule() {
             </button>
             <button
               className="icon-button"
-              disabled={weekOffset >= 1}
+              disabled={weekOffset >= lastWeek}
               onClick={() => {
                 setWeekOffset((v) => v + 1);
                 setSelected(shiftDate(selected, 7));
@@ -88,7 +174,7 @@ export default function Schedule() {
         </div>
         <div className="date-strip">
           {days.map((date) => {
-            const doses = state.doses.filter(
+            const doses = weekDoses.filter(
               (d) => dateInZone(d.scheduledAt, state.patient.timeZone) === date,
             );
             return (
@@ -121,11 +207,19 @@ export default function Schedule() {
               </span>
             </h3>
             <p>
-              {totalTaken} of {dayDoses.length} doses recorded as taken
+              {hasWeek
+                ? `${totalTaken} of ${dayDoses.length} doses recorded as taken`
+                : loading
+                  ? "Loading dose records…"
+                  : "Dose records could not be loaded."}
             </p>
           </div>
           <span className="pill">
-            <CalendarDays size={13} />
+            {fetching ? (
+              <Spinner label="Refreshing medication schedule" />
+            ) : (
+              <CalendarDays size={13} />
+            )}
             {state.patient.timeZone.replaceAll("_", " ")}
           </span>
         </div>
@@ -157,7 +251,32 @@ export default function Schedule() {
             />
           </label>
         </div>
-        <DoseList doses={filtered} />
+        {error && (
+          <div className="empty-state" role="alert">
+            <h3>Schedule could not be loaded</h3>
+            <p>{error}</p>
+            {hasWeek && <p>Showing the last loaded schedule.</p>}
+            <button
+              className="button secondary"
+              onClick={() => setRetry((value) => value + 1)}
+            >
+              Retry schedule
+            </button>
+          </div>
+        )}
+        {!hasWeek && loading ? (
+          <div className="empty-state" role="status">
+            <Spinner label="Loading this week's schedule" />
+            <p>Loading this week's schedule…</p>
+          </div>
+        ) : !hasWeek ? null : dayDoses.length > 0 && filtered.length === 0 ? (
+          <Empty
+            title="No doses match this view"
+            description="Choose another status or clear the medication filter."
+          />
+        ) : (
+          <DoseList doses={filtered} />
+        )}
         <div className="schedule-card-footer">
           <span>Check-ins record what you report, not proof of ingestion.</span>
           <span>Follow the prescribed instructions.</span>

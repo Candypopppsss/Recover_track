@@ -13,6 +13,7 @@ export async function createStore({
   dataDir = process.env.DATA_DIR || path.resolve(".data"),
   memory = false,
   mongoUri = process.env.MONGODB_URI,
+  postgresUri = process.env.DATABASE_URL || process.env.POSTGRES_URL,
 } = {}) {
   let key;
   if (process.env.DATA_ENCRYPTION_KEY) {
@@ -68,6 +69,10 @@ export async function createStore({
       ]).toString("utf8"),
     );
   };
+  if (postgresUri) {
+    const { createPostgresStore } = await import("./store-postgres.mjs");
+    return createPostgresStore({ uri: postgresUri, encrypt, decrypt });
+  }
   if (mongoUri) {
     const client = new MongoClient(mongoUri, {
       serverSelectionTimeoutMS: 8000,
@@ -222,6 +227,8 @@ export async function createStore({
     }
     return {
       kind: "mongodb",
+      ping: () =>
+        database.command({ ping: 1 }, { maxTimeMS: 5000, timeoutMS: 8000 }),
       exclusive,
       get: async (kind, id) => {
         const r = await collection.findOne({ _id: `${kind}:${id}` });
@@ -276,6 +283,7 @@ export async function createStore({
   const remove = db.prepare("DELETE FROM records WHERE kind = ? AND id = ?");
   return {
     kind: "sqlite-encrypted",
+    ping: async () => db.prepare("SELECT 1").get(),
     get: async (kind, id) => {
       const r = get.get(kind, id);
       return r ? decrypt(r.payload) : null;

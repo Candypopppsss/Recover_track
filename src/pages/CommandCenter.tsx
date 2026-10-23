@@ -15,6 +15,9 @@ export default function CommandCenter() {
   const [pending, setPending] = useState<string | null>(null);
   const [tab, setTab] = useState<"open" | "resolved">("open");
   const rate = adherence(state.doses);
+  const pendingFollowUps = (state.callbacks ?? []).filter(
+    (callback) => callback.status !== "resolved",
+  ).length;
   const callbacks = (state.callbacks ?? []).filter((c) =>
     tab === "open" ? c.status !== "resolved" : c.status === "resolved",
   );
@@ -47,6 +50,15 @@ export default function CommandCenter() {
             : "Shared recovery records"}{" "}
           · External hospital systems are not connected.
         </p>
+      </div>
+      <div className="context-strip">
+        <span>
+          Reviewing <strong>{state.patient.name}</strong>
+        </span>
+        <span>
+          <strong>{pendingFollowUps}</strong> open follow-up
+          {pendingFollowUps === 1 ? "" : "s"}
+        </span>
       </div>
       <div className="command-grid">
         <section className="card patient-tile">
@@ -87,12 +99,7 @@ export default function CommandCenter() {
               <span>Daily check-ins</span>
             </div>
             <div>
-              <strong>
-                {
-                  (state.callbacks ?? []).filter((c) => c.status !== "resolved")
-                    .length
-                }
-              </strong>
+              <strong>{pendingFollowUps}</strong>
               <span>Open follow-ups</span>
             </div>
           </div>

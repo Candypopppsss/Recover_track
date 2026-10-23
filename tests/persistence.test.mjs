@@ -10,6 +10,8 @@ import { dateInZone } from "../server/scheduling.mjs";
 test("encrypted household records and sessions survive an API restart with the retained local key", async (t) => {
   const dataDir = await mkdtemp(path.join(tmpdir(), "recovertrack-restart-"));
   let app = await createApp({
+    postgresUri: null,
+    mongoUri: null,
     dataDir,
     startWorker: false,
     test: true,
@@ -50,6 +52,8 @@ test("encrypted household records and sessions survive an API restart with the r
   const keyInfo = await stat(path.join(dataDir, "encryption.key"));
   assert.equal(keyInfo.mode & 0o777, 0o600);
   app = await createApp({
+    postgresUri: null,
+    mongoUri: null,
     dataDir,
     startWorker: false,
     test: true,

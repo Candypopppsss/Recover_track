@@ -12,6 +12,7 @@ import {
   Plus,
   Link2,
   Copy,
+  ArrowRight,
 } from "lucide-react";
 import { post } from "../api";
 import { useApp, initials, formatDate } from "../context";
@@ -91,7 +92,7 @@ export default function CareTeam() {
     <>
       <PageHeader
         title="Care team"
-        description={`People with access to ${state.patient.name}'s recovery record.`}
+        description={`Household members and sharing choices for ${state.patient.name}.`}
         action={
           <>
             <button
@@ -115,6 +116,50 @@ export default function CareTeam() {
           </>
         }
       />
+      <section
+        className="sharing-overview"
+        aria-label="Household sharing status"
+      >
+        <div className="sharing-overview-item">
+          <Users size={19} />
+          <div>
+            <span>Household members</span>
+            <strong>{state.careTeam.length}</strong>
+          </div>
+        </div>
+        <div className="sharing-overview-item">
+          <ShieldCheck size={19} />
+          <div>
+            <span>Caregiver sharing</span>
+            <strong>
+              {state.consent
+                ? state.consent.caregiver
+                  ? "Enabled"
+                  : "Paused"
+                : "Not available"}
+            </strong>
+          </div>
+        </div>
+        <div className="sharing-overview-item">
+          <Stethoscope size={19} />
+          <div>
+            <span>Clinician review</span>
+            <strong>
+              {state.consent
+                ? state.consent.clinician
+                  ? "Enabled"
+                  : "Paused"
+                : "Not available"}
+            </strong>
+          </div>
+        </div>
+        <button className="text-button" onClick={() => navigate("/settings")}>
+          {state.user.role === "caregiver"
+            ? "Manage sharing"
+            : "View sharing choices"}
+          <ArrowRight size={15} />
+        </button>
+      </section>
       <div className="member-grid">
         {state.careTeam.map((member, index) => (
           <section className="card member-card" key={member.id}>

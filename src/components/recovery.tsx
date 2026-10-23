@@ -190,13 +190,13 @@ export function AdherenceChart({ large = false }: { large?: boolean }) {
           <CartesianGrid
             strokeDasharray="3 5"
             vertical={false}
-            stroke="#eeedf3"
+            stroke="#e7e9df"
           />
           <XAxis
             dataKey="day"
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 11, fill: "#9390a3" }}
+            tick={{ fontSize: 11, fill: "#69776d" }}
             dy={7}
           />
           <YAxis
@@ -205,21 +205,21 @@ export function AdherenceChart({ large = false }: { large?: boolean }) {
             tickFormatter={(v) => `${v}%`}
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 10, fill: "#a5a1b2" }}
+            tick={{ fontSize: 10, fill: "#69776d" }}
           />
           <Tooltip
             contentStyle={{
-              border: "1px solid #eeedf3",
+              border: "1px solid #e1e6db",
               borderRadius: 12,
               fontSize: 12,
             }}
             formatter={(value) => [`${value ?? "—"}%`, "Recorded adherence"]}
-            cursor={{ fill: "#f7f5fd" }}
+            cursor={{ fill: "#edf2e9" }}
           />
           <Bar
             isAnimationActive={false}
             dataKey="adherence"
-            fill="#9680eb"
+            fill="#2f6854"
             radius={[5, 5, 0, 0]}
           />
         </BarChart>
@@ -256,31 +256,31 @@ export function PainChart() {
         >
           <defs>
             <linearGradient id="painFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#9b86e8" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#9b86e8" stopOpacity={0} />
+              <stop offset="0%" stopColor="#7ba58a" stopOpacity={0.25} />
+              <stop offset="100%" stopColor="#7ba58a" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid
             strokeDasharray="3 5"
             vertical={false}
-            stroke="#eeedf3"
+            stroke="#e7e9df"
           />
           <XAxis
             dataKey="day"
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 11, fill: "#9390a3" }}
+            tick={{ fontSize: 11, fill: "#69776d" }}
           />
           <YAxis
             domain={[0, 10]}
             ticks={[0, 5, 10]}
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 10, fill: "#a5a1b2" }}
+            tick={{ fontSize: 10, fill: "#69776d" }}
           />
           <Tooltip
             contentStyle={{
-              border: "1px solid #eeedf3",
+              border: "1px solid #e1e6db",
               borderRadius: 12,
               fontSize: 12,
             }}
@@ -290,10 +290,10 @@ export function PainChart() {
             type="monotone"
             dataKey="pain"
             name="Self-reported pain"
-            stroke="#9580db"
+            stroke="#2f6854"
             strokeWidth={2.5}
             fill="url(#painFill)"
-            dot={{ r: 3, fill: "#9580db", strokeWidth: 2, stroke: "white" }}
+            dot={{ r: 3, fill: "#2f6854", strokeWidth: 2, stroke: "white" }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -393,7 +393,7 @@ export function DailyCheckIn() {
     setBusy(false);
   }
   return (
-    <section className="card checkin-card">
+    <section className="card checkin-card" id="daily-check-in">
       <CardHeader
         title="Daily check-in"
         subtitle="Record today's pain and mobility."
@@ -461,8 +461,14 @@ export function DailyCheckIn() {
             <span>No pain</span>
             <span>Severe pain</span>
           </div>
-          <label className="field mobility-label">How is moving around?</label>
-          <div className="mobility-options">
+          <p className="field mobility-label" id="mobility-label">
+            How is moving around?
+          </p>
+          <div
+            className="mobility-options"
+            role="group"
+            aria-labelledby="mobility-label"
+          >
             {(
               [
                 { id: "resting", label: "Resting", icon: Heart },
@@ -473,6 +479,7 @@ export function DailyCheckIn() {
               <button
                 key={item.id}
                 className={`mobility-option ${mobility === item.id ? "active" : ""}`}
+                aria-pressed={mobility === item.id}
                 onClick={() => setMobility(item.id)}
               >
                 <item.icon size={17} />

@@ -4,31 +4,56 @@
 
 The root `vercel.json` builds the Vite frontend and routes `/api` requests to `api/index.mjs`. The Express API runs as a Node.js function with a 60-second maximum duration. OCR and attention scoring run in Node; this deployment does not start Python, a native Tesseract process or a persistent reminder worker.
 
-### Setup
+### Neon setup
 
-1. Create a MongoDB database and a database user with read/write access to `recovertrack`. Atlas Free is sufficient for a small personal demo within its storage and connection limits.
-2. Import the repository through [Vercel's new-project page](https://vercel.com/new). Use the repository root, Vite framework preset and the checked-in configuration.
-3. Add `MONGODB_URI` and `DATA_ENCRYPTION_KEY` in the project's private environment settings. Set the variables for every environment you intend to run. Do not prefix them with `VITE_`, which would expose them to browser code.
-4. Permit the deployment's outbound database connections in MongoDB's network settings. Vercel Hobby functions do not provide a fixed outbound IP; choose a network policy appropriate to the database rather than copying a local development allowlist.
-5. Deploy, then verify registration/login, a reviewed OCR upload, dose recording and persistence through the assigned HTTPS address. Redeploy after changing runtime variables.
+1. Import the repository through [Vercel's new-project page](https://vercel.com/new), or use the existing project. Use the repository root, Vite framework preset and checked-in configuration.
+2. Open the project's **Storage** tab, choose **Create Database**, and select **Neon** from the database integrations.
+3. Select **Neon Free** explicitly. Connect the database to this Vercel project with the default environment-variable names and enable **Production**. Enable Preview separately if needed. Do not select a paid plan or time-limited trial; if Free is unavailable for the account, do not proceed with a paid substitute.
+4. The integration supplies `DATABASE_URL` to the connected environment. The app also accepts `POSTGRES_URL`. Leave the supplied TLS/SSL connection settings intact. Never prefix database or encryption variables with `VITE_`, which would expose them to browser code.
+5. In **Settings → Environment Variables**, add a stable `DATA_ENCRYPTION_KEY` for the same environments: a canonical base64-encoded 32-byte key. If a valid key already exists, keep it. Save a protected backup.
+6. **Redeploy** the project so the function receives the new variables. Connecting storage does not update a deployment that is already running.
+7. Open `/api/health` through the deployed HTTPS app. Expect HTTP 200 with `database: "postgresql-encrypted"`, then test registration/login, reviewed OCR upload, dose recording and persistence after another deployment.
 
-Generate the encryption key once with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"` in a private terminal, then save it securely in Vercel and a protected backup. The output is a secret; do not put it in Git or chat. Regenerating the key on redeployment makes existing records unreadable. Reusing an existing database requires its original encryption key.
+Generate a new encryption key only when one is needed: run `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"` in a private terminal and save the output directly in Vercel's private settings. Do not put it in Git or chat. Changing the key makes records encrypted with the old key unreadable.
 
-The API rejects startup without MongoDB and a valid key. It does not fall back to SQLite on Vercel's temporary filesystem. `server/vercel.mjs` sets `COOKIE_SECURE=true` and `TRUST_PROXY=1`; no internal-service token is needed because OCR/scoring run in process. The same-origin `/api` routes avoid cross-host cookie setup.
+The PostgreSQL adapter creates its tables and indexes idempotently during initialization; there is no manual SQL setup. Neon handles database connectivity through the integration, without the MongoDB Atlas IP-allowlist setup. This does not remove the need to protect the database credentials.
+
+### Database selection and existing data
+
+The app prefers `DATABASE_URL`, then `POSTGRES_URL`, then `MONGODB_URI`. When PostgreSQL and MongoDB variables are both present, PostgreSQL is used. Local development falls back to SQLite only when no hosted database is configured; Vercel never falls back to temporary local storage.
+
+Connecting a new Neon database starts with an empty record store. Existing MongoDB or SQLite records are neither copied nor deleted. Keep the original database and key if those records are needed, and plan an explicit migration instead of resetting storage. A PostgreSQL connection string and a MongoDB connection string are not interchangeable.
+
+`server/vercel.mjs` requires a hosted database and a valid encryption key, enables `COOKIE_SECURE=true` and `TRUST_PROXY=1`, and uses in-process OCR/scoring. No Python service token is needed. The same-origin `/api` routes avoid cross-host cookie setup.
+
+### Initialization errors
+
+A page loading successfully only confirms the frontend was served. A generic initialization error alone does not identify which setting failed. This version returns HTTP 503 with a non-secret `code` when initialization fails:
+
+| Code | Check |
+| --- | --- |
+| `storage_config_missing` | A supported database URL is missing or invalid. Connect Neon to this project/environment. |
+| `encryption_key_missing` | The key is missing or not a canonical base64-encoded 32-byte value. |
+| `database_unreachable` | Initialization did not complete. Check connection settings, provider availability and function logs. |
+
+- Check that `DATABASE_URL` or `POSTGRES_URL` is present in the environment used by the deployment, especially **Production** versus **Preview**. Check presence without sharing the value.
+- Check that `DATA_ENCRYPTION_KEY` decodes to exactly 32 bytes and is the original key for any existing encrypted data.
+- Confirm that the Neon database is connected to this Vercel project, then redeploy after changing variables.
+- Use the deployed `/api/health` response and Vercel function logs to check initialization. A logged-out `/api/state` returning 401 is expected once health succeeds.
+
+No public deployment or live Neon connection is established by these instructions. Verify the actual URL and data persistence before sharing the app.
 
 ### Runtime limits
 
 - Uploads are limited to 4 MB, leaving room for multipart overhead under the function request limit. Resize larger photos or enter medication details manually.
 - OCR uses Tesseract.js/WASM with bundled English data. No external OCR provider, model download or Python host is needed. Cold starts and OCR must fit within the 60-second function duration.
-- MongoDB stores accounts, sessions, drafts, schedules and records. Database-backed coordination protects mutations across function instances. Treat Atlas storage/connection quotas as operating limits, not a reason to use temporary local storage.
+- PostgreSQL stores accounts, sessions, drafts, schedules and records. Database-backed coordination protects mutations across function instances. Keep within the provider's storage, compute and connection quotas.
 - Reminders are request-driven. An open app polls for updates; no reminders run when there are no requests, and no background notification is delivered to a closed app.
-- Vercel Hobby is intended for personal, non-commercial use and is subject to function, transfer and build quotas. Atlas Free also has quotas and inactivity policies. Account availability and provider rules can change; neither tier guarantees uninterrupted operation or permanent free hosting.
-
-The repository contains deployment configuration. A successful local build or emulator check does not establish a live Vercel deployment or database connection. Verify the actual project URL and persistence before sharing it.
+- Vercel Hobby is intended for personal, non-commercial use and has function, transfer and build quotas. Neon Free has compute, storage and connection limits. Eligibility has not been checked for the current accounts. Neither tier guarantees uninterrupted operation or permanent free hosting, and this setup does not authorize an upgrade, payment or trial.
 
 ## Local and Docker deployments
 
-`npm run dev` starts Vite, Express and Python locally. `npm start` serves the compiled frontend through the API and starts Python unless `INTELLIGENCE_URL` is supplied. The supervisor loads an ignored `.env` file when present. Local SQLite is suitable for development; retain its key and database together.
+`npm run dev` starts Vite, Express and Python locally. `npm start` serves the compiled frontend through the API and starts Python unless `INTELLIGENCE_URL` is supplied. The supervisor loads an ignored `.env` file when present. Storage uses the same PostgreSQL → MongoDB → SQLite selection described above. Retain a local SQLite key and database together.
 
 The root Dockerfile packages the frontend/API; `services/intelligence/Dockerfile` packages Python and Tesseract. `compose.production.yaml` adds Caddy and automatic HTTPS to the base `compose.yaml`.
 
@@ -63,7 +88,8 @@ If a separate HTTPS API already exists, `npm run configure:vercel` can generate 
 
 | Variable | Scope and purpose |
 | --- | --- |
-| `MONGODB_URI` | Required on Vercel and Render; optional for local/Docker MongoDB. |
+| `DATABASE_URL` / `POSTGRES_URL` | Preferred PostgreSQL connection, normally supplied by the Vercel/Neon integration. `DATABASE_URL` takes precedence. |
+| `MONGODB_URI` | Existing MongoDB alternative when no PostgreSQL connection is configured. Required by the retained Render profile. |
 | `MONGODB_DATABASE` | Database name; default `recovertrack`. |
 | `DATA_ENCRYPTION_KEY` | Required stable key for hosted records; optional locally if a key file is used. |
 | `COOKIE_SECURE` / `TRUST_PROXY` | Enabled by the Vercel/Render entrypoints; configure explicitly behind other trusted HTTPS proxies. |
@@ -79,7 +105,7 @@ If a separate HTTPS API already exists, `npm run configure:vercel` can generate 
 
 Run `npm run build` and `npm run check:secrets` before publication. The guard checks staged/tracked blobs and build assets; stage intended files before scanning. It rejects staged/tracked environment files, examples, private keys, local databases and common credential patterns.
 
-Back up MongoDB data and the encryption key under separate access controls. Test restoration with the original key. Changing the key variable alone is not key rotation: existing records require a decrypt/re-encrypt migration. Record payload encryption does not encrypt index metadata.
+Back up database records and the encryption key under separate access controls. Test restoration with the original key. Changing the key variable alone is not key rotation: existing records require a decrypt/re-encrypt migration. Record payload encryption does not encrypt index metadata.
 
 For SQLite, use one API process and a transaction-consistent backup, or stop the process before copying database/WAL files. Restrict database users and network access to the chosen hosting policy, and monitor connection, storage and OCR failures.
 

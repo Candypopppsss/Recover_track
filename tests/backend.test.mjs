@@ -53,6 +53,8 @@ async function setup(t, riskResponse = risk, appOptions = {}) {
   await new Promise((resolve) => intelligence.listen(0, "127.0.0.1", resolve));
   const app = await createApp({
     dataDir: dir,
+    postgresUri: null,
+    mongoUri: null,
     serviceUrl: `http://127.0.0.1:${intelligence.address().port}`,
     startWorker: false,
     test: true,

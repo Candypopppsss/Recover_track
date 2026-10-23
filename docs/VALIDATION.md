@@ -14,14 +14,17 @@ Playwright starts the development stack if one is not running. It uses system Ch
 
 | Suite | Cases | Coverage |
 | --- | ---: | --- |
-| Node | 49 | API access, review gates, scheduling/timezones, consent, invitations, persistence, secret guards, deployment configuration, Node OCR and Python parser/rule parity. |
+| Node | 57 | API access, review gates, scheduling/timezones, bounded schedule pages, consent, invitations, persistence, secret guards, PostgreSQL TLS, deployment configuration and Node OCR/Python parity. |
 | MongoDB 8 | 10 | Encrypted persistence, separate-instance registration and mutation protection, consent revocation, and the Vercel handler with real OCR. |
+| PostgreSQL 17 | 9 | Encrypted persistence, transaction rollback, concurrent instances, household permissions, consent, stable key requirements and the Vercel handler with real OCR. |
 | Python | 21 | OCR/parser validation, service authorization and attention-rule boundaries. |
-| Browser | 8 | Auth, invitations, review/confirmation, medication management, check-ins, settings, exports and mobile navigation. |
+| Browser | 12 | Scrolling landing page, responsive layouts, recoverable API failures, auth, invitations, OCR review, medication management, check-ins, settings, exports and full 90-day schedule navigation. |
 
-The current suites passed **88 tests: 49 Node, 10 MongoDB, 21 Python and 8 browser scenarios**, with no failures or skipped cases. The production frontend build and production dependency audit also pass.
+The current suites passed **109 tests: 57 Node, 10 MongoDB, 9 PostgreSQL, 21 Python and 12 browser scenarios**, with no failures or skipped cases in the completed runs. The production frontend build and production dependency audit also pass. The full browser suite ran against a disposable PostgreSQL database, not a hosted production database.
 
 Run `npm run test:mongo` with `RECOVERTRACK_TEST_MONGODB_URI` pointing to a disposable MongoDB 8 server. This separate suite uses random test databases and deletes them afterward; missing connection settings cause a failure rather than a skipped run. CI runs it with a loopback-only MongoDB service. Storage-only cases use OCR fixtures; the Vercel integration case invokes the actual bundled Node OCR engine.
+
+Run `npm run test:postgres` with `RECOVERTRACK_TEST_POSTGRES_URL` pointing to a disposable PostgreSQL server whose test user can create databases. This suite creates and removes random databases. CI uses PostgreSQL 17 on loopback. Local SQLite fixtures explicitly disable hosted adapters; dedicated MongoDB tests disable PostgreSQL selection.
 
 Managed Atlas connectivity, external delivery, production TLS/MFA and clinical outcomes are not covered by these suites.
 
@@ -29,11 +32,11 @@ Managed Atlas connectivity, external delivery, production TLS/MFA and clinical o
 
 The Node adapter matches 89 attention-rule and 24 parser reference cases generated from the Python implementation. Its tests also exercise actual OCR, image validation, authorization and limits.
 
-The Vercel handler integration uses real MongoDB 8 and actual OCR. It checks secure session cookies, mandatory prescription review, same-origin request protection, encrypted payloads and records restored through a fresh function instance. Missing storage/key settings fail closed; initialization and request-time errors do not log private connection details.
+Vercel handler integrations use real MongoDB 8 or PostgreSQL 17 and actual OCR. They check secure session cookies, mandatory prescription review, same-origin request protection, encrypted payloads and records restored through a fresh function instance. PostgreSQL tests also inject failures to verify account and regimen writes roll back atomically. Missing storage/key settings fail closed; initialization and request-time errors do not log private connection details. Readiness detects a database outage after initialization without requiring a valid session.
 
-Vercel's `@vercel/node` 27.0.1 builder traced the function for Node.js 24. The materialized bundle contained 902 files and occupied about 95 MB, including worker, WASM, English language data and native image processing. Three additional checks ran from this isolated bundle: MongoDB/OCR health, registration and a real fictional prescription upload. The OCR step took 816 ms in that local check. Private environment, data and provider/cache directories were absent from the function file list.
+Vercel's `@vercel/node` 27.0.1 builder traced the function for Node.js 24. The PostgreSQL-enabled materialized bundle contained 969 paths and occupied about 114 MB, including worker, WASM, English language data and native image processing. Eight isolated package checks verified readiness, secure registration, real OCR, mandatory review, confirmed 90-day scheduling, a bounded final-week response, fresh-instance persistence and encrypted payloads. OCR took 664 ms in that local check. Private environment, data and provider/cache directories were absent from the function file list.
 
-These are local runtime and packaging checks. No Vercel project or production database has been connected, and no deployed public URL has been verified.
+These are local runtime and packaging checks. The public site at `recovertrack-pink.vercel.app` was inspected before this update: its frontend returned HTTP 200 and API health/state returned HTTP 503 with the older generic initialization error. The production database configuration could not be inspected from this workspace. A live Neon connection and successful public login, OCR and persistence remain separate release checks.
 
 ## Docker verification
 

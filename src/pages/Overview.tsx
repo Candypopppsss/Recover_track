@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, CheckCheck, Heart, Pill, Plus, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CheckCheck,
+  Heart,
+  Pill,
+  Plus,
+  TrendingUp,
+} from "lucide-react";
 import {
   useApp,
   adherence,
@@ -26,6 +34,9 @@ export default function Overview() {
     (d) => dateInZone(d.scheduledAt, state.patient.timeZone) === today,
   );
   const taken = todayDoses.filter((d) => d.status === "taken").length;
+  const skipped = todayDoses.filter((d) => d.status === "skipped").length;
+  const recorded = taken + skipped;
+  const dailyCheckIn = state.checkIns.some((checkIn) => checkIn.date === today);
   const rate = adherence(state.doses);
   const day = recoveryDay(state.patient.recoveryStart, today);
   const active = state.medications.filter((m) => m.status === "active").length;
@@ -52,6 +63,61 @@ export default function Overview() {
           </>
         }
       />
+      <section
+        className="recovery-summary"
+        aria-labelledby="recovery-summary-title"
+      >
+        <div className="recovery-summary-copy">
+          <span className="recovery-summary-label">Your daily plan</span>
+          <h2 id="recovery-summary-title">Your recovery plan for today.</h2>
+          <p>
+            {formatDate(today, {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+            <span aria-hidden="true"> · </span>
+            {state.patient.name}
+          </p>
+          <a className="recovery-summary-link" href="#daily-check-in">
+            {dailyCheckIn ? "View today's check-in" : "Record a daily check-in"}
+            <ArrowRight size={15} />
+          </a>
+        </div>
+        <div className="recovery-summary-progress">
+          <div>
+            <strong>
+              {recorded}
+              <span> / {todayDoses.length}</span>
+            </strong>
+            <span>Dose check-ins today</span>
+          </div>
+          <div
+            className="recovery-progress-track"
+            role="progressbar"
+            aria-label="Today's dose check-ins"
+            aria-valuemin={0}
+            aria-valuemax={Math.max(todayDoses.length, 1)}
+            aria-valuenow={recorded}
+            aria-valuetext={
+              todayDoses.length
+                ? `${recorded} of ${todayDoses.length} scheduled doses have a check-in`
+                : "No doses scheduled today"
+            }
+          >
+            <span
+              style={{
+                width: `${todayDoses.length ? (recorded / todayDoses.length) * 100 : 0}%`,
+              }}
+            />
+          </div>
+          <small>
+            {todayDoses.length
+              ? "Taken and skipped doses are counted."
+              : "Your reviewed schedule will appear here."}
+          </small>
+        </div>
+      </section>
       <div className="stats-grid">
         {[
           {
@@ -59,7 +125,7 @@ export default function Overview() {
             value: `${taken}`,
             suffix: `/ ${todayDoses.length}`,
             detail: todayDoses.length
-              ? `${Math.max(0, todayDoses.length - taken)} check-ins remaining`
+              ? `${Math.max(0, todayDoses.length - recorded)} check-ins remaining${skipped ? ` · ${skipped} skipped` : ""}`
               : "No doses scheduled today",
             icon: CheckCheck,
             color: "purple",

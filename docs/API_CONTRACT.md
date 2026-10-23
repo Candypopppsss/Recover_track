@@ -1,6 +1,6 @@
 # RecoverTrack API
 
-The browser uses same-origin `/api` requests with an HttpOnly session cookie. Vite proxies these during development. Errors are JSON `{ "error": "message" }`. Patient-local calendar dates use `YYYY-MM-DD`; timestamps use ISO UTC and the profile stores an IANA timezone. Access is scoped to one authorized household per account. The Python intelligence API is private and requires the shared `x-internal-token` header when configured.
+The browser uses same-origin `/api` requests with an HttpOnly session cookie. Vite proxies these during development. Errors are JSON `{ "error": "message" }`, with an optional safe `code` for service setup failures. Patient-local calendar dates use `YYYY-MM-DD`; timestamps use ISO UTC and the profile stores an IANA timezone. Access is scoped to one authorized household per account. Local/Docker deployments use a private Python intelligence API with the shared `x-internal-token` header when configured; Vercel uses the in-process Node adapter.
 
 ## Authentication
 
@@ -16,10 +16,13 @@ Demo accounts cannot invite or join real households. New personal accounts canno
 
 ## Recovery records
 
-GET `/state` returns `user, demo, patient, medications, doses, checkIns, prescriptions, notifications, activity, risk, settings, consent, careTeam, callbacks, auditLog`. Doses cover the previous 14 days and the coming 7 days. Patient views do not receive the audit log. Read operations are audited. The frontend polls every 30 seconds; the reminder worker also runs every 30 seconds while the API process is running.
+GET `/state` returns `user, demo, patient, medications, doses, doseRange, checkIns, prescriptions, notifications, activity, risk, settings, consent, careTeam, callbacks, auditLog`. Its compact dose list covers the previous 14 days, today and the coming 7 days. `doseRange` is `{from,to}` for the earliest and latest dose dates across the authorized household's complete history, in the patient's timezone, or `null` when there are no doses. Patient views do not receive the audit log. Read operations are audited. The frontend polls every 30 seconds; a long-running API's reminder worker also runs every 30 seconds. Vercel evaluates reminders on requests.
+
+GET `/doses?from=YYYY-MM-DD&to=YYYY-MM-DD` returns `{doses:[...]}` for an inclusive patient-local date range of 1–31 days. Both dates are required; invalid, reversed or larger ranges return 400. Results belong only to the authenticated household, honor sharing consent, include projected status using the current grace period and are sorted by scheduled timestamp. The schedule loads one seven-day range at a time, allowing full medication courses and older history without enlarging `/state` responses.
 
 | Method and route | Body | Permission and behavior |
 | --- | --- | --- |
+| GET `/doses?from=...&to=...` | — | Authorized household; inclusive patient-local range, maximum 31 days. |
 | POST `/medications` | Medication fields + `reviewed:true` | Caregiver; creates one reviewed schedule. |
 | POST `/medications/batch` | `{medications:[...]}` | Caregiver; validates every medication before creating any schedules. |
 | PATCH `/medications/:id` | Editable fields, `reviewed:true`; or `status` alone | Caregiver; changing prescribed fields requires review again. Preserves historical dose records. |
@@ -38,7 +41,7 @@ A medication contains `name, strength, dose, instructions, times:string[], start
 
 ## Prescription review
 
-1. POST `/prescriptions/upload` with multipart field `file`. Accepts valid PNG/JPEG/WebP images up to 10 MB. Returns a draft with actual OCR text, candidate medication fields, extracted frequency, engine, warning, optional engine confidence and critical-field review flag. Exact dose times are left blank unless explicitly present. No schedule is created.
+1. POST `/prescriptions/upload` with multipart field `file`. Accepts valid PNG/JPEG/WebP images up to 4 MB. Returns a draft with actual OCR text, candidate medication fields, extracted frequency, engine, warning, optional engine confidence and critical-field review flag. Exact dose times are left blank unless explicitly present. No schedule is created.
 2. Correct every field against the original prescription. OCR confidence is an engine signal, not calibrated medical correctness. It is separate from a critical-field review flag.
 3. POST `/prescriptions/:id/confirm` with `{medications:[{...fields,reviewed:true}],criticalityFlag?}`. Every medication and schedule is validated before saving. Confirmation is single-use. Raw OCR draft text is removed after confirmation; original images are never stored long term.
 
@@ -48,7 +51,7 @@ Prescription history retains separate uploaded records and version metadata. Thi
 
 POST `/care-team/invitations` with `{role:caregiver|patient|doctor,email?}` creates a hashed, single-use code valid for 48 hours. Caregiver/clinician sharing must be enabled for those roles. The returned `{code,expiresAt}` is shared privately by the user; no email is sent.
 
-An authenticated personal account with no existing recovery records accepts using POST `/care-team/join` with `{code}`. Optional email binding is enforced. Joining changes its household and role and rotates the session. This implementation supports one household per account and one API process; it does not implement hospital-wide identity/membership management or distributed write locking.
+An authenticated personal account with no existing recovery records accepts using POST `/care-team/join` with `{code}`. Optional email binding is enforced. Joining changes its household and role and rotates the session. This implementation supports one household per account. PostgreSQL and MongoDB backends coordinate mutations across API instances; local SQLite uses one API process. Hospital-wide identity/membership management is not implemented.
 
 ## Intelligence service
 

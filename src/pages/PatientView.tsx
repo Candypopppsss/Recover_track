@@ -1,6 +1,6 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useApp, todayInZone, dateInZone } from "../context";
+import { useApp, todayInZone, dateInZone, formatDate } from "../context";
 import { PageHeader, CardHeader } from "../components/ui";
 import { DailyCheckIn, DoseList } from "../components/recovery";
 export default function PatientView() {
@@ -10,6 +10,7 @@ export default function PatientView() {
   const doses = state.doses.filter(
     (d) => dateInZone(d.scheduledAt, state.patient.timeZone) === today,
   );
+  const taken = doses.filter((dose) => dose.status === "taken").length;
   return (
     <div className="patient-view">
       <PageHeader
@@ -24,10 +25,30 @@ export default function PatientView() {
           )
         }
       />
-      <p className="patient-today">
-        {doses.filter((dose) => dose.status === "taken").length} of{" "}
-        {doses.length} doses recorded as taken today.
-      </p>
+      <section
+        className="patient-day-summary"
+        aria-label="Today's recovery plan"
+      >
+        <div>
+          <span className="recovery-summary-label">
+            {formatDate(today, {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </span>
+          <h2>Your plan for today</h2>
+          <p>Follow your reviewed schedule and record how you feel.</p>
+        </div>
+        <div className="patient-day-count">
+          <CheckCheck size={22} />
+          <strong>
+            {taken}
+            <span> / {doses.length}</span>
+          </strong>
+          <span>Doses recorded as taken</span>
+        </div>
+      </section>
       <section className="card">
         <CardHeader
           title="Today's medications"

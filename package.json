@@ -17,7 +17,8 @@
     "typecheck": "tsc -b",
     "check:secrets": "node scripts/check-secrets.mjs --dist",
     "configure:vercel": "node scripts/configure-vercel.mjs",
-    "test:mongo": "node --test tests/integration/*.test.mjs"
+    "test:mongo": "node --test tests/integration/mongodb.test.mjs tests/integration/vercel.test.mjs",
+    "test:postgres": "node --test tests/integration/postgres.test.mjs"
   },
   "dependencies": {
     "@tesseract.js-data/eng": "1.0.0",
@@ -28,6 +29,7 @@
     "lucide-react": "^0.468.0",
     "mongodb": "^6.19.0",
     "multer": "^2.0.2",
+    "pg": "8.23.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.0",

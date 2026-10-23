@@ -48,6 +48,7 @@ export default function App() {
   const [state, setState] = useState<State | null>(null);
   const [loading, setLoading] = useState(true);
   const [failure, setFailure] = useState("");
+  const [retrying, setRetrying] = useState(false);
   const [prescription, setPrescription] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [mobile, setMobile] = useState(false);
@@ -101,7 +102,7 @@ export default function App() {
                 ? "Your session has ended. Sign in to continue."
                 : err.message,
             );
-          }
+          } else setFailure((err as Error).message);
         }),
       30000,
     );
@@ -148,6 +149,18 @@ export default function App() {
     await refresh();
     navigate("/");
   }
+  async function retryConnection() {
+    setRetrying(true);
+    try {
+      await api("/health");
+      await refresh();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) setFailure("");
+      else setFailure((err as Error).message);
+    } finally {
+      setRetrying(false);
+    }
+  }
   if (loading)
     return (
       <div className="loading-page">
@@ -157,24 +170,11 @@ export default function App() {
     );
   if (!state)
     return (
-      <>
-        {failure && (
-          <div className="connection-banner" role="alert">
-            {failure}{" "}
-            <button
-              onClick={() => {
-                setLoading(true);
-                refresh()
-                  .catch((err) => setFailure((err as Error).message))
-                  .finally(() => setLoading(false));
-              }}
-            >
-              Try again
-            </button>
-          </div>
-        )}
-        <Auth onSuccess={signedIn} />
-      </>
+      <Auth
+        onSuccess={signedIn}
+        serviceError={failure}
+        onRetry={retryConnection}
+      />
     );
   const role = state.user.role;
   const isDoctor = role === "doctor";
@@ -352,6 +352,20 @@ export default function App() {
               </button>
             </div>
           </header>
+          {failure && (
+            <div className="workspace-connection-notice" role="alert">
+              <span>
+                Updates are paused. Your last loaded records are shown.
+              </span>
+              <button
+                className="text-button"
+                onClick={retryConnection}
+                disabled={retrying}
+              >
+                {retrying ? "Checking connection…" : "Try again"}
+              </button>
+            </div>
+          )}
           {state.demo && (
             <div className="demo-banner">
               <span>

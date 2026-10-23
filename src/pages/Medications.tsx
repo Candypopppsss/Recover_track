@@ -56,6 +56,16 @@ export default function Medications() {
           )
         }
       />
+      <div className="context-strip">
+        <span>
+          <Pill size={15} />
+          {state.patient.name}'s medication plan
+        </span>
+        <span>
+          All times in{" "}
+          <strong>{state.patient.timeZone.replaceAll("_", " ")}</strong>
+        </span>
+      </div>
       <div className="filter-row medication-filters">
         <div className="section-tabs standalone">
           <button
@@ -157,6 +167,13 @@ export default function Medications() {
                     </div>
                   </div>
                   <div className="medication-footer">
+                    <span className="medication-plan-note">
+                      {m.status === "paused"
+                        ? "Schedule paused"
+                        : m.status === "completed"
+                          ? "Course completed"
+                          : "Reviewed plan"}
+                    </span>
                     {writable && (
                       <div>
                         <button

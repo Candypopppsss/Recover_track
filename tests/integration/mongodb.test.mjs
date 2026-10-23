@@ -115,6 +115,7 @@ async function setup(t) {
   await new Promise((resolve) => intelligence.listen(0, "127.0.0.1", resolve));
   const options = {
     mongoUri,
+    postgresUri: null,
     dataDir: dir,
     serviceUrl: `http://127.0.0.1:${intelligence.address().port}`,
     startWorker: false,
@@ -378,7 +379,11 @@ test("MongoDB ciphertext needs the same external encryption key after ephemeral 
   process.env.DATA_ENCRYPTION_KEY = randomBytes(32).toString("base64");
   let wrong;
   try {
-    wrong = await createStore({ mongoUri, dataDir: ctx.dir });
+    wrong = await createStore({
+      mongoUri,
+      postgresUri: null,
+      dataDir: ctx.dir,
+    });
     await assert.rejects(wrong.get("verification", "key-test"));
   } finally {
     await wrong?.close();

@@ -272,6 +272,7 @@ export async function createApp(options = {}) {
     };
   }
   app.use("/api", async (req, _res, next) => {
+    if (req.path === "/health") return next();
     try {
       const token = req.cookies[cookieName];
       if (token) {
@@ -470,6 +471,17 @@ export async function createApp(options = {}) {
     return patient;
   }
   app.get("/api/health", async (_req, res) => {
+    try {
+      await store.ping?.();
+    } catch {
+      return res.status(503).json({
+        status: "unavailable",
+        database: store.kind,
+        code: "database_unreachable",
+        error:
+          "RecoverTrack cannot reach its database. Please try again shortly.",
+      });
+    }
     let ocr = "unavailable";
     try {
       const r = await intelligenceRequest(`${serviceUrl}/health`, {
@@ -638,6 +650,33 @@ export async function createApp(options = {}) {
       await store.put("notification", id, notification, household);
     }
   }
+  app.get("/api/doses", async (req, res) => {
+    const { from, to } = z
+      .object({ from: dateSchema, to: dateSchema })
+      .strict()
+      .parse(req.query);
+    if (from > to || (Date.parse(to) - Date.parse(from)) / 86400000 >= 31)
+      fail(400, "Choose a date range of 1 to 31 days.");
+    const household = req.user.householdId;
+    const [patient, settings, records] = await Promise.all([
+      store.get("patient", household),
+      store.get("settings", household),
+      store.list("dose", household),
+    ]);
+    const now = Date.now();
+    const doses = records
+      .filter((dose) => {
+        const day = dateInZone(new Date(dose.scheduledAt), patient.timeZone);
+        return day >= from && day <= to;
+      })
+      .map((dose) => ({
+        ...dose,
+        status: projectedStatus(dose, settings.graceMinutes, now),
+      }))
+      .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+    await audit(household, req.user, "dose_history.viewed", { from, to });
+    res.json({ doses });
+  });
   app.get("/api/state", async (req, res) => {
     const household = req.user.householdId;
     const [
@@ -668,6 +707,12 @@ export async function createApp(options = {}) {
     const today = dateInZone(new Date(), patient.timeZone);
     const from = addDays(today, -14),
       to = addDays(today, 8);
+    const doseDates = rawDoses
+      .map((dose) => dateInZone(new Date(dose.scheduledAt), patient.timeZone))
+      .sort();
+    const doseRange = doseDates.length
+      ? { from: doseDates[0], to: doseDates.at(-1) }
+      : null;
     const doses = rawDoses
       .map((d) => ({ ...d, status: projectedStatus(d, settings.graceMinutes) }))
       .filter((d) => {
@@ -719,6 +764,7 @@ export async function createApp(options = {}) {
       patient,
       medications: medications.filter((m) => !m.archived),
       doses,
+      doseRange,
       settings,
       consent,
       checkIns: checkIns.sort((a, b) => a.date.localeCompare(b.date)),
@@ -1381,7 +1427,10 @@ export async function createApp(options = {}) {
       });
     if (error.type === "entity.parse.failed")
       return res.status(400).json({ error: "Invalid JSON request." });
-    if (!error.status) console.error("RecoverTrack request failed. Check private service availability.");
+    if (!error.status)
+      console.error(
+        "RecoverTrack request failed. Check private service availability.",
+      );
     res.status(error.status || 500).json({
       error: error.status
         ? error.message
@@ -1405,7 +1454,9 @@ export async function createApp(options = {}) {
             );
         }
       } catch (error) {
-        console.error("Reminder worker failed. Check private service availability.");
+        console.error(
+          "Reminder worker failed. Check private service availability.",
+        );
       }
     }, 30_000);
     timer.unref();
