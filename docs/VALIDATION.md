@@ -39,7 +39,7 @@ Only a temporary loopback port was published. All verification containers, netwo
 
 The combined `Dockerfile.render` image passed 11 local container checks with a 512 MiB memory limit and no swap. These covered production assets, secure authentication, actual Tesseract OCR, mandatory review, duplicate/access rejection and records surviving container replacement. A fresh root-owned disk started successfully after the narrow ownership bootstrap; Node/Python ran as UID 10001, and the generated encryption key retained mode `0600` and survived replacement.
 
-Peak memory during the OCR scenario was 147,214,336 bytes (about 140.4 MiB), with no OOM termination. This measures the tested scenario, not production load capacity. The temporary containers, volume and bind directory were removed. Blueprint YAML and its local settings were checked; Render-side validation, billing approval and a public deployment still require hosting-account access.
+Peak memory during the OCR scenario was 147,214,336 bytes (about 140.4 MiB), with no OOM termination. This measures the tested scenario, not production load capacity. The temporary containers, volume and bind directory were removed. The Blueprint also passes Render's [published JSON schema](https://render.com/schema/render.yaml.json), including its currently documented `0.5c-512mb` plan. Account-specific resource validation, billing approval and a public deployment still require hosting-account access.
 
 ## OCR evaluation
 

@@ -4,7 +4,7 @@ services:
     runtime: docker
     repo: https://github.com/Candypopppsss/Recover_track
     branch: main
-    plan: starter
+    plan: 0.5c-512mb
     region: oregon
     dockerfilePath: ./Dockerfile.render
     dockerContext: .

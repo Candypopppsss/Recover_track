@@ -24,7 +24,7 @@ Store secrets outside the repository. For production, set `COOKIE_SECURE=true`, 
 
 ## Render
 
-[Create the Render deployment](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FCandypopppsss%2FRecover_track), sign in, review the displayed service/storage charges and confirm resource creation. The repository's `render.yaml` selects one Starter Docker web service and a 1 GB persistent disk. This is a paid configuration; no resources are created by opening the link alone. Check Render's current pricing before confirming.
+[Create the Render deployment](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FCandypopppsss%2FRecover_track), sign in, review the displayed service/storage charges and confirm resource creation. The repository's `render.yaml` selects one `0.5c-512mb` Docker web service and a 1 GB persistent disk. Render's [listed pricing](https://render.com/pricing), checked on 2026-10-23, is $7/month for compute plus $0.25/month for the disk, before taxes, additional usage or workspace charges. This is a paid configuration; no resources are created by opening the link alone. Check the displayed total before confirming.
 
 `Dockerfile.render` runs the compiled frontend/API and supervised Python/Tesseract in one container. Render supplies an HTTPS `onrender.com` address; a custom domain is optional. The launcher uses the platform's `RENDER_EXTERNAL_URL` as the allowed origin, respects `PORT`, enables secure cookies and keeps Python on loopback. If adding a custom domain, also configure its exact HTTPS origin in `ALLOWED_ORIGINS`.
 
