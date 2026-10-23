@@ -20,7 +20,7 @@ const risk = {
   experimental: true,
   modelVersion: "rules-v1",
 };
-async function setup(t, riskResponse = risk) {
+async function setup(t, riskResponse = risk, appOptions = {}) {
   const dir = await mkdtemp(path.join(tmpdir(), "recovertrack-test-"));
   const intelligence = createServer(async (req, res) => {
     res.setHeader("Content-Type", "application/json");
@@ -56,6 +56,7 @@ async function setup(t, riskResponse = risk) {
     serviceUrl: `http://127.0.0.1:${intelligence.address().port}`,
     startWorker: false,
     test: true,
+    ...appOptions,
   });
   t.after(async () => {
     await app.locals.close();
@@ -504,4 +505,65 @@ test("manual multi-medication batch validates all records before any schedules a
     .expect(201);
   assert.equal(saved.body.medications.length, 2);
   assert.equal((await agent.get("/api/state")).body.medications.length, 2);
+});
+
+test("serverless API uses injected intelligence for health, attention and OCR with static serving disabled", async (t) => {
+  const calls = [];
+  const intelligenceRequest = async (url, init) => {
+    const endpoint = new URL(url).pathname;
+    calls.push(endpoint);
+    assert.ok(init.signal instanceof AbortSignal);
+    if (endpoint === "/health")
+      return Response.json({ status: "ok", ocr: "in-process-test" });
+    if (endpoint === "/risk") {
+      const body = JSON.parse(init.body);
+      assert.ok(Array.isArray(body.doses));
+      assert.ok(body.doses.every((dose) => !("medicationName" in dose)));
+      return Response.json(risk);
+    }
+    assert.equal(endpoint, "/ocr");
+    assert.ok(init.body instanceof FormData);
+    assert.equal((await init.body.get("file").arrayBuffer()).byteLength, 12);
+    return Response.json({
+      text: "Fictional prescription",
+      engine: "in-process-test",
+      medications: [],
+    });
+  };
+  const { app, agent } = await setup(t, risk, {
+    intelligenceRequest,
+    serveStatic: false,
+  });
+  const health = await request(app).get("/api/health").expect(200);
+  assert.equal(health.body.ocr, "in-process-test");
+  await request(app).get("/").expect(404);
+  await agent.post("/api/auth/demo").send({ role: "caregiver" }).expect(201);
+  const state = await agent.get("/api/state").expect(200);
+  assert.equal(state.body.risk.score, risk.score);
+  const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2, 3]);
+  const upload = await agent
+    .post("/api/prescriptions/upload")
+    .attach("file", png, "fictional.png")
+    .expect(201);
+  assert.equal(upload.body.engine, "in-process-test");
+  assert.deepEqual(calls, ["/health", "/risk", "/ocr"]);
+});
+
+test("prescription upload rejects images above 4 MB before invoking intelligence", async (t) => {
+  let calls = 0;
+  const { agent } = await setup(t, risk, {
+    intelligenceRequest: async () => {
+      calls++;
+      throw new Error("Unexpected intelligence request");
+    },
+  });
+  await agent.post("/api/auth/demo").send({ role: "caregiver" }).expect(201);
+  const png = Buffer.alloc(4 * 1024 * 1024 + 1);
+  Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(png);
+  const result = await agent
+    .post("/api/prescriptions/upload")
+    .attach("file", png, "oversized.png")
+    .expect(400);
+  assert.match(result.body.error, /under 4 MB/);
+  assert.equal(calls, 0);
 });

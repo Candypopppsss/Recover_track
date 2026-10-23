@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm ci --no-audit --no-fund",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/index.mjs": {
+      "maxDuration": 60,
+      "includeFiles": "node_modules/{tesseract.js,tesseract.js-core,@tesseract.js-data/eng,sharp,@img}/**",
+      "excludeFiles": "{.data/**,.env,.env.*,**/.env,**/.env.*,.vercel/**,.cache/**,tests/**,services/**,docs/**}"
+    }
+  },
+  "routes": [
+    { "src": "/api(?:/.*)?", "dest": "/api/index" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

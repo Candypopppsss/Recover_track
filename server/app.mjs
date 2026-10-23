@@ -73,7 +73,7 @@ const consentSchema = z
   .strict();
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 4 * 1024 * 1024, files: 1 },
 });
 const cookieName = "recovertrack_session";
 const unavailableRisk = {
@@ -93,6 +93,7 @@ export async function createApp(options = {}) {
     options.serviceUrl ??
     process.env.INTELLIGENCE_URL ??
     "http://127.0.0.1:8001";
+  const intelligenceRequest = options.intelligenceRequest || fetch;
   const locks = new Map();
   async function exclusive(key, fn) {
     const previous = locks.get(key) || Promise.resolve();
@@ -103,11 +104,28 @@ export async function createApp(options = {}) {
     locks.set(key, next);
     await previous;
     try {
-      return await fn();
+      return await (store.exclusive ? store.exclusive(key, fn) : fn());
     } finally {
       release();
       if (locks.get(key) === next) locks.delete(key);
     }
+  }
+  async function exclusiveResponse(key, res, fn) {
+    if (!store.exclusive) return exclusive(key, fn);
+    const json = res.json;
+    let response;
+    // Release Mongo leases before ending HTTP responses: a serverless instance
+    // can freeze as soon as the response ends, before an awaited finally runs.
+    res.json = function (body) {
+      response = body;
+      return this;
+    };
+    try {
+      await exclusive(key, fn);
+    } finally {
+      res.json = json;
+    }
+    return res.json(response);
   }
   app.disable("x-powered-by");
   if (process.env.TRUST_PROXY === "1") app.set("trust proxy", 1);
@@ -454,7 +472,7 @@ export async function createApp(options = {}) {
   app.get("/api/health", async (_req, res) => {
     let ocr = "unavailable";
     try {
-      const r = await fetch(`${serviceUrl}/health`, {
+      const r = await intelligenceRequest(`${serviceUrl}/health`, {
         signal: AbortSignal.timeout(1500),
       });
       if (r.ok) {
@@ -512,7 +530,7 @@ export async function createApp(options = {}) {
           .optional(),
       })
       .parse(req.body);
-    await exclusive(`email:${emailHash(body.email)}`, async () => {
+    await exclusiveResponse(`email:${emailHash(body.email)}`, res, async () => {
       if (await store.get("email", emailHash(body.email)))
         fail(409, "An account with this email already exists.");
       const salt = randomBytes(16).toString("hex");
@@ -560,7 +578,7 @@ export async function createApp(options = {}) {
   app.use("/api", authenticated);
   async function getRisk(doses, checkIns, patient) {
     try {
-      const result = await fetch(`${serviceUrl}/risk`, {
+      const result = await intelligenceRequest(`${serviceUrl}/risk`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -775,7 +793,7 @@ export async function createApp(options = {}) {
     return med;
   }
   app.post("/api/medications", caregiver, async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const patient = await store.get("patient", req.user.householdId);
       res
         .status(201)
@@ -788,7 +806,7 @@ export async function createApp(options = {}) {
     }),
   );
   app.post("/api/medications/batch", caregiver, async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const { medications } = z
         .object({ medications: z.array(medSchema).min(1).max(15) })
         .parse(req.body);
@@ -803,7 +821,7 @@ export async function createApp(options = {}) {
     }),
   );
   app.patch("/api/medications/:id", caregiver, async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const original = await owned("medication", req.params.id, req.user);
       const changes = z
         .object({
@@ -860,7 +878,7 @@ export async function createApp(options = {}) {
     }),
   );
   app.delete("/api/medications/:id", caregiver, async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const med = await owned("medication", req.params.id, req.user);
       med.archived = true;
       med.status = "completed";
@@ -879,7 +897,7 @@ export async function createApp(options = {}) {
     }),
   );
   app.post("/api/doses/:id/check-in", writer, async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const { status, note = "" } = z
         .object({
           status: z.enum(["taken", "skipped"]),
@@ -912,7 +930,7 @@ export async function createApp(options = {}) {
     }),
   );
   app.post("/api/doses/:id/undo", writer, async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const dose = await owned("dose", req.params.id, req.user);
       if (!["taken", "skipped"].includes(dose.status))
         fail(409, "This dose has no check-in to undo.");
@@ -934,7 +952,7 @@ export async function createApp(options = {}) {
     }),
   );
   app.post("/api/checkins", writer, async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const body = z
         .object({
           date: dateSchema.optional(),
@@ -1045,7 +1063,7 @@ export async function createApp(options = {}) {
     res.json(value);
   });
   app.post("/api/notifications/read", async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const { ids } = z
         .object({ ids: z.array(z.string()).max(100).optional() })
         .parse(req.body);
@@ -1145,7 +1163,7 @@ export async function createApp(options = {}) {
       );
       let output;
       try {
-        const result = await fetch(`${serviceUrl}/ocr`, {
+        const result = await intelligenceRequest(`${serviceUrl}/ocr`, {
           method: "POST",
           headers: {
             "x-internal-token": process.env.INTERNAL_SERVICE_TOKEN || "",
@@ -1214,7 +1232,7 @@ export async function createApp(options = {}) {
     },
   );
   app.post("/api/prescriptions/:id/confirm", caregiver, async (req, res) =>
-    exclusive(req.user.householdId, async () => {
+    exclusiveResponse(req.user.householdId, res, async () => {
       const draft = await owned("prescription", req.params.id, req.user);
       if (draft.status === "confirmed")
         fail(409, "This prescription was already confirmed.");
@@ -1288,7 +1306,7 @@ export async function createApp(options = {}) {
     if (req.user.demo)
       fail(400, "Create a personal account to join a household.");
     const { code } = z.object({ code: str(100) }).parse(req.body);
-    await exclusive(`invitation:${hash(code)}`, async () => {
+    await exclusiveResponse(`invitation:${hash(code)}`, res, async () => {
       const invitation = await store.get("invitation", hash(code));
       if (
         !invitation ||
@@ -1338,7 +1356,10 @@ export async function createApp(options = {}) {
     res.status(404).json({ error: "API endpoint not found." }),
   );
   const dist = path.resolve("dist");
-  if (existsSync(path.join(dist, "index.html"))) {
+  if (
+    options.serveStatic !== false &&
+    existsSync(path.join(dist, "index.html"))
+  ) {
     app.use(express.static(dist));
     app.get("/{*path}", (_req, res) =>
       res.sendFile(path.join(dist, "index.html")),
@@ -1346,33 +1367,26 @@ export async function createApp(options = {}) {
   }
   app.use((error, _req, res, _next) => {
     if (error instanceof z.ZodError)
-      return res
-        .status(400)
-        .json({
-          error: error.issues
-            .map((i) => `${i.path.join(".") || "Input"}: ${i.message}`)
-            .join("; "),
-        });
+      return res.status(400).json({
+        error: error.issues
+          .map((i) => `${i.path.join(".") || "Input"}: ${i.message}`)
+          .join("; "),
+      });
     if (error instanceof multer.MulterError)
-      return res
-        .status(400)
-        .json({
-          error:
-            error.code === "LIMIT_FILE_SIZE"
-              ? "The image is too large. Use an image under 10 MB."
-              : "Upload one prescription image.",
-        });
+      return res.status(400).json({
+        error:
+          error.code === "LIMIT_FILE_SIZE"
+            ? "The image is too large. Use an image under 4 MB."
+            : "Upload one prescription image.",
+      });
     if (error.type === "entity.parse.failed")
       return res.status(400).json({ error: "Invalid JSON request." });
-    if (!error.status)
-      console.error("RecoverTrack request failed:", error.name, error.message);
-    res
-      .status(error.status || 500)
-      .json({
-        error: error.status
-          ? error.message
-          : "Something went wrong. Please try again.",
-      });
+    if (!error.status) console.error("RecoverTrack request failed. Check private service availability.");
+    res.status(error.status || 500).json({
+      error: error.status
+        ? error.message
+        : "Something went wrong. Please try again.",
+    });
   });
   let timer;
   if (options.startWorker !== false) {
@@ -1391,7 +1405,7 @@ export async function createApp(options = {}) {
             );
         }
       } catch (error) {
-        console.error("Reminder worker failed:", error.message);
+        console.error("Reminder worker failed. Check private service availability.");
       }
     }, 30_000);
     timer.unref();

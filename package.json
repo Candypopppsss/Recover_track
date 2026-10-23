@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=24.0.0"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
@@ -17,29 +17,32 @@
     "typecheck": "tsc -b",
     "check:secrets": "node scripts/check-secrets.mjs --dist",
     "configure:vercel": "node scripts/configure-vercel.mjs",
-    "test:mongo": "node --test tests/integration/mongodb.test.mjs"
+    "test:mongo": "node --test tests/integration/*.test.mjs"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "lucide-react": "^0.468.0",
+    "mongodb": "^6.19.0",
+    "multer": "^2.0.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.0",
-    "lucide-react": "^0.468.0",
     "recharts": "^3.1.2",
-    "express": "^5.1.0",
-    "helmet": "^8.1.0",
-    "express-rate-limit": "^8.1.0",
-    "cookie-parser": "^1.4.7",
-    "multer": "^2.0.2",
-    "zod": "^4.1.0",
-    "mongodb": "^6.19.0"
+    "sharp": "0.35.5",
+    "tesseract.js": "7.0.0",
+    "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.3",
-    "vite": "^7.1.5",
+    "supertest": "^7.1.4",
     "typescript": "~5.9.2",
-    "@playwright/test": "^1.55.0",
-    "supertest": "^7.1.4"
+    "vite": "^7.1.5"
   }
 }

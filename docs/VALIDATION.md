@@ -14,16 +14,26 @@ Playwright starts the development stack if one is not running. It uses system Ch
 
 | Suite | Cases | Coverage |
 | --- | ---: | --- |
-| Node | 35 | API access, review gates, scheduling/timezones, duplicate mutations, consent, invitations, restart persistence, secret guards and Vercel/Render deployment configuration. |
-| MongoDB 8 | 7 | Encrypted CRUD, deletion of all local files, stable key requirements, access restrictions, sharing consent and concurrent mutation protection. |
+| Node | 49 | API access, review gates, scheduling/timezones, consent, invitations, persistence, secret guards, deployment configuration, Node OCR and Python parser/rule parity. |
+| MongoDB 8 | 10 | Encrypted persistence, separate-instance registration and mutation protection, consent revocation, and the Vercel handler with real OCR. |
 | Python | 21 | OCR/parser validation, service authorization and attention-rule boundaries. |
 | Browser | 8 | Auth, invitations, review/confirmation, medication management, check-ins, settings, exports and mobile navigation. |
 
-The recorded suites passed **71 tests: 35 Node, 7 MongoDB, 21 Python and 8 browser scenarios**, with no failures or skipped cases. Node and MongoDB suites were rerun for the free deployment; API, Python and browser source remained unchanged.
+The current suites passed **88 tests: 49 Node, 10 MongoDB, 21 Python and 8 browser scenarios**, with no failures or skipped cases. The production frontend build and production dependency audit also pass.
 
-Run `npm run test:mongo` with `RECOVERTRACK_TEST_MONGODB_URI` pointing to a disposable MongoDB 8 server. This separate suite uses random test databases and deletes them afterward; missing connection settings cause a failure rather than a skipped run. CI runs it with a loopback-only MongoDB service. Its OCR responses are storage fixtures; actual OCR is covered by Python and container checks.
+Run `npm run test:mongo` with `RECOVERTRACK_TEST_MONGODB_URI` pointing to a disposable MongoDB 8 server. This separate suite uses random test databases and deletes them afterward; missing connection settings cause a failure rather than a skipped run. CI runs it with a loopback-only MongoDB service. Storage-only cases use OCR fixtures; the Vercel integration case invokes the actual bundled Node OCR engine.
 
 Managed Atlas connectivity, external delivery, production TLS/MFA and clinical outcomes are not covered by these suites.
+
+## Vercel function verification
+
+The Node adapter matches 89 attention-rule and 24 parser reference cases generated from the Python implementation. Its tests also exercise actual OCR, image validation, authorization and limits.
+
+The Vercel handler integration uses real MongoDB 8 and actual OCR. It checks secure session cookies, mandatory prescription review, same-origin request protection, encrypted payloads and records restored through a fresh function instance. Missing storage/key settings fail closed; initialization and request-time errors do not log private connection details.
+
+Vercel's `@vercel/node` 27.0.1 builder traced the function for Node.js 24. The materialized bundle contained 902 files and occupied about 95 MB, including worker, WASM, English language data and native image processing. Three additional checks ran from this isolated bundle: MongoDB/OCR health, registration and a real fictional prescription upload. The OCR step took 816 ms in that local check. Private environment, data and provider/cache directories were absent from the function file list.
+
+These are local runtime and packaging checks. No Vercel project or production database has been connected, and no deployed public URL has been verified.
 
 ## Docker verification
 

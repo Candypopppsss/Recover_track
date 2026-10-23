@@ -18,7 +18,6 @@ dist
 *.pfx
 id_rsa
 id_ed25519
-server
 services
 tests
 docs

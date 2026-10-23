@@ -96,10 +96,8 @@ export default function PrescriptionModal({
       );
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError(
-        "This image is too large. Please choose a file smaller than 10 MB.",
-      );
+    if (file.size > 4 * 1024 * 1024) {
+      setError("Upload an image of 4 MB or less.");
       return;
     }
     setBusy(true);
@@ -281,7 +279,7 @@ export default function PrescriptionModal({
               onChange={(e) => readFile(e.target.files?.[0])}
               aria-label="Prescription image"
             />
-            <small>JPG, PNG or WebP · Up to 10 MB</small>
+            <small>JPG, PNG or WebP · Up to 4 MB</small>
           </div>
           <p className="subtle-note">
             <Info size={13} />
