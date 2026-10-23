@@ -23,6 +23,18 @@ function httpsOrigin(value) {
 
 export function configureRenderEnvironment(input = process.env) {
   const configured = { ...input };
+  if (input.RECOVERTRACK_REQUIRE_MONGODB === "true") {
+    const mongoUri = input.MONGODB_URI?.trim();
+    if (!mongoUri || !/^mongodb(?:\+srv)?:\/\//.test(mongoUri)) {
+      throw new Error("Set MONGODB_URI to the persistent MongoDB database before starting the free service.");
+    }
+    const key = input.DATA_ENCRYPTION_KEY?.trim();
+    if (!key || !/^[A-Za-z0-9+/]{43}=$/.test(key) || Buffer.from(key, "base64").toString("base64") !== key) {
+      throw new Error("The free service requires a persistent base64-encoded 32-byte DATA_ENCRYPTION_KEY.");
+    }
+    configured.MONGODB_URI = mongoUri;
+    configured.DATA_ENCRYPTION_KEY = key;
+  }
   const origins = input.ALLOWED_ORIGINS?.trim() || input.RENDER_EXTERNAL_URL?.trim();
   if (!origins) {
     throw new Error("Set RENDER_EXTERNAL_URL or ALLOWED_ORIGINS before starting the Render service.");

@@ -4,17 +4,13 @@ services:
     runtime: docker
     repo: https://github.com/Candypopppsss/Recover_track
     branch: main
-    plan: 0.5c-512mb
+    plan: free
     region: oregon
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
     healthCheckPath: /api/health
     autoDeployTrigger: "off"
     numInstances: 1
-    disk:
-      name: recovertrack-data
-      mountPath: /app/.data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
@@ -28,5 +24,13 @@ services:
         value: "1"
       - key: OCR_ENGINE
         value: tesseract
+      - key: RECOVERTRACK_REQUIRE_MONGODB
+        value: "true"
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        value: recovertrack
+      - key: DATA_ENCRYPTION_KEY
+        generateValue: true
       - key: INTERNAL_SERVICE_TOKEN
         generateValue: true

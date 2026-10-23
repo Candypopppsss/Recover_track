@@ -50,3 +50,29 @@ jobs:
           name: browser-test-results
           path: test-results/
           retention-days: 7
+
+  mongodb-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      mongodb:
+        image: mongo:8.0
+        ports:
+          - 127.0.0.1:27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked Node dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify encrypted MongoDB persistence and access rules
+        env:
+          RECOVERTRACK_TEST_MONGODB_URI: mongodb://127.0.0.1:27017
+        run: npm run test:mongo

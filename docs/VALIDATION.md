@@ -14,13 +14,16 @@ Playwright starts the development stack if one is not running. It uses system Ch
 
 | Suite | Cases | Coverage |
 | --- | ---: | --- |
-| Node | 33 | API access, review gates, scheduling/timezones, duplicate mutations, consent, invitations, restart persistence, secret guards and Vercel/Render deployment configuration. |
+| Node | 35 | API access, review gates, scheduling/timezones, duplicate mutations, consent, invitations, restart persistence, secret guards and Vercel/Render deployment configuration. |
+| MongoDB 8 | 7 | Encrypted CRUD, deletion of all local files, stable key requirements, access restrictions, sharing consent and concurrent mutation protection. |
 | Python | 21 | OCR/parser validation, service authorization and attention-rule boundaries. |
 | Browser | 8 | Auth, invitations, review/confirmation, medication management, check-ins, settings, exports and mobile navigation. |
 
-The recorded suites passed **62 tests: 33 Node, 21 Python and 8 browser scenarios**, with no failures or skipped cases. The Node suite was rerun after adding the Render launcher; application, Python and browser source remained unchanged.
+The recorded suites passed **71 tests: 35 Node, 7 MongoDB, 21 Python and 8 browser scenarios**, with no failures or skipped cases. Node and MongoDB suites were rerun for the free deployment; API, Python and browser source remained unchanged.
 
-MongoDB, external delivery, production TLS/MFA and clinical outcomes are not covered by these tests.
+Run `npm run test:mongo` with `RECOVERTRACK_TEST_MONGODB_URI` pointing to a disposable MongoDB 8 server. This separate suite uses random test databases and deletes them afterward; missing connection settings cause a failure rather than a skipped run. CI runs it with a loopback-only MongoDB service. Its OCR responses are storage fixtures; actual OCR is covered by Python and container checks.
+
+Managed Atlas connectivity, external delivery, production TLS/MFA and clinical outcomes are not covered by these suites.
 
 ## Docker verification
 
@@ -39,7 +42,13 @@ Only a temporary loopback port was published. All verification containers, netwo
 
 The combined `Dockerfile.render` image passed 11 local container checks with a 512 MiB memory limit and no swap. These covered production assets, secure authentication, actual Tesseract OCR, mandatory review, duplicate/access rejection and records surviving container replacement. A fresh root-owned disk started successfully after the narrow ownership bootstrap; Node/Python ran as UID 10001, and the generated encryption key retained mode `0600` and survived replacement.
 
-Peak memory during the OCR scenario was 147,214,336 bytes (about 140.4 MiB), with no OOM termination. This measures the tested scenario, not production load capacity. The temporary containers, volume and bind directory were removed. The Blueprint also passes Render's [published JSON schema](https://render.com/schema/render.yaml.json), including its currently documented `0.5c-512mb` plan. Account-specific resource validation, billing approval and a public deployment still require hosting-account access.
+Peak memory during the original SQLite OCR scenario was 147,214,336 bytes (about 140.4 MiB), with no OOM termination. This measures the tested scenario, not production load capacity. The temporary containers, volume and bind directory were removed. The current Blueprint passes Render's [published JSON schema](https://render.com/schema/render.yaml.json) with `plan: free` and no disk. Account-specific resource creation and a public deployment still require hosting-account access.
+
+## Free profile verification
+
+Seven additional container checks passed with **0.1 CPU, 512 MiB RAM and no swap**, using MongoDB 8 outside the API container and a stable environment encryption key. Actual Tesseract extraction took 6.093 seconds. Startup took 41.283 seconds and replacement took 39.351 seconds, including Docker creation/readiness. Peak memory was 161,554,432 bytes (about 154.1 MiB), with no OOM termination.
+
+The replacement discarded the entire API container and `.data` directory. The account, session, confirmed prescription, medication and five doses remained accessible through MongoDB; no local key, SQLite database or uploaded image was needed. All temporary API/MongoDB containers, networks and test data were removed. This tests one fictional card locally; managed Atlas authentication/networking, Render cold starts and production load remain unverified until actual hosting accounts are connected.
 
 ## OCR evaluation
 

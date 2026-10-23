@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
 import { configureRenderEnvironment } from "../scripts/start-render.mjs";
 
 test("Render runtime derives its exact HTTPS origin and honors the platform port", () => {
@@ -47,5 +48,32 @@ test("Render runtime rejects missing or unsafe origins before starting services"
 test("Render runtime rejects invalid public listener ports", () => {
   for (const port of ["0", "65536", "not-a-port", "3001/path"]) {
     assert.throws(() => configureRenderEnvironment({ RENDER_EXTERNAL_URL: "https://recovery.example.org", PORT: port }), /TCP port/);
+  }
+});
+
+test("free Render preserves its external database and stable encryption key", () => {
+  const key = randomBytes(32).toString("base64");
+  const configured = configureRenderEnvironment({
+    RECOVERTRACK_REQUIRE_MONGODB: "true",
+    MONGODB_URI: "mongodb://database:27017/recovertrack",
+    DATA_ENCRYPTION_KEY: key,
+    RENDER_EXTERNAL_URL: "https://recovertrack-test.onrender.com",
+  });
+  assert.equal(configured.MONGODB_URI, "mongodb://database:27017/recovertrack");
+  assert.equal(configured.DATA_ENCRYPTION_KEY, key);
+});
+
+test("free Render refuses to fall back to ephemeral SQLite or a temporary key", () => {
+  const valid = {
+    RECOVERTRACK_REQUIRE_MONGODB: "true",
+    MONGODB_URI: "mongodb://database:27017/recovertrack",
+    DATA_ENCRYPTION_KEY: randomBytes(32).toString("base64"),
+    RENDER_EXTERNAL_URL: "https://recovertrack-test.onrender.com",
+  };
+  for (const uri of [undefined, "", "https://database.example.org"]) {
+    assert.throws(() => configureRenderEnvironment({ ...valid, MONGODB_URI: uri }), /MONGODB_URI/);
+  }
+  for (const key of [undefined, "", randomBytes(16).toString("base64"), "?".repeat(43) + "="]) {
+    assert.throws(() => configureRenderEnvironment({ ...valid, DATA_ENCRYPTION_KEY: key }), /DATA_ENCRYPTION_KEY/);
   }
 });

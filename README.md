@@ -23,7 +23,7 @@ Create an account for an empty household, or choose a demo role to use fictional
 - Daily pain/mobility reports, adherence charts and an experimental attention score.
 - Caregiver invitations, clinician review, follow-up queue and access history.
 
-SQLite is the default. Record payloads use AES-256-GCM encryption; retain `.data/encryption.key` with the database. `MONGODB_URI` selects the optional MongoDB adapter, which has not been integration-tested.
+SQLite is the local default. Record payloads use AES-256-GCM encryption; retain `.data/encryption.key` with the database. `MONGODB_URI` selects MongoDB, used by the free hosted profile and integration-tested against MongoDB 8. Keep its encryption key in the host's private environment.
 
 ## Tests
 
@@ -41,7 +41,9 @@ Playwright uses system Chromium when available. Otherwise install it with `npx p
 
 ## Deployment
 
-For hosted Docker, [create the Render deployment](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FCandypopppsss%2FRecover_track). The Blueprint configures the complete app, HTTPS and a persistent disk. Render requires account sign-in and approval of its displayed service and storage charges.
+For a free hosted demo, use [Render Free with MongoDB Atlas Free](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FCandypopppsss%2FRecover_track). The Blueprint configures the complete app and HTTPS, with records stored in your free Atlas database. It requests no paid service or disk. Both providers require accounts, and Atlas setup is required before deployment.
+
+Render Free sleeps after 15 minutes without incoming traffic; reopening can take about a minute. Background reminders pause while it sleeps. Free-tier storage and monthly usage limits apply.
 
 See [deployment instructions](docs/DEPLOYMENT.md) for Render setup or an existing Docker server. Vercel can host the frontend when an existing HTTPS backend is available.
 
