@@ -125,6 +125,34 @@ test("optional build scanning catches files excluded from Git publication", (t) 
   );
 });
 
+test("large staged assets are scanned through their final byte without logging credentials", (t) => {
+  const repo = repository(t);
+  const file = "public/downloads/project-record.txt";
+  const publicText = "Public project documentation.\n".repeat(40_000);
+  assert.ok(Buffer.byteLength(publicText) > 1024 * 1024);
+  repo.write(file, publicText);
+  repo.stage(file);
+  assert.deepEqual(checkRepository(repo.directory), {
+    fileCount: 1,
+    findings: [],
+  });
+
+  const secret = ["gh", "p_"].join("") + "c".repeat(36);
+  repo.write(file, `${publicText}${secret}`);
+  repo.stage(file);
+  const result = spawnSync(process.execPath, [cli], {
+    cwd: repo.directory,
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /github-token/);
+  assert.match(result.stderr, /"line":40001/);
+  assert.ok(
+    !`${result.stdout}${result.stderr}`.includes(secret),
+    "credential at the end of a large asset must not be logged",
+  );
+});
+
 test("the guard fails closed for an empty index or missing requested build output", (t) => {
   const repo = repository(t);
   assert.throws(

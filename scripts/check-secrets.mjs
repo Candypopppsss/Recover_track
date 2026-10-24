@@ -83,6 +83,9 @@ export function checkRepository(directory, { includeDist = false } = {}) {
     execFileSync("git", args, {
       cwd: directory,
       stdio: ["ignore", "pipe", "pipe"],
+      // Git blobs can contain document/image assets larger than Node's 1 MiB
+      // default. Keep a bounded capture and fail closed if it is exceeded.
+      maxBuffer: 8 * 1024 * 1024,
     });
   const entries = git("ls-files", "--stage", "-z")
     .toString("utf8")
